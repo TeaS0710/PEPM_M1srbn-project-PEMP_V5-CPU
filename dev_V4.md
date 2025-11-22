@@ -191,6 +191,228 @@ strategies:
 * `none`, `cap_docs`, `alpha_total` implémentés (version V1 simplifiée).
 * `cap_tokens` : placeholder (TODO).
 
+### 3.4 Champs label : liste et normalisation
+
+* `label_field` peut être une **chaîne** ou une **liste** (`label_fields`) ; priorité à la liste si présente, avec fallback vers le premier champ trouvant un `<term type="...">`.
+* Les clés du `label_map` sont normalisées (minuscules, espaces/`-`/`/` → `_`, caractères spéciaux nettoyés) et les labels bruts sont toujours convertis dans ce format avant lookup. Exemple : `crawl-actionfrancaise-20251003_000000` → `crawl_actionfrancaise_20251003_000000` pour matcher la clé YAML.
+* En l'absence de `label_map`, le label utilisé est la version **normalisée** du terme brut, garantissant cohérence de casse et de séparateurs.
+* Les profils existants restent compatibles : la liste reste optionnelle et `label_field` seul fonctionne toujours.
+
+---
+
+## 4. Corpus TEI : structure et conventions
+
+Cette section résume le corpus TEI ciblé par V4 (namespace `http://www.tei-c.org/ns/1.0`). Les chemins sont donnés sans préfixe de namespace pour la lisibilité.
+
+### 4.1 Vue d'ensemble
+
+* Racine unique `<teiCorpus>` avec un `<teiHeader>` **corpus-level** puis ~528k éléments `<TEI>` (un par document).
+* Espaces de noms :
+  * `tei`: `http://www.tei-c.org/ns/1.0`
+  * `xml`: `http://www.w3.org/XML/1998/namespace` (pour `xml:id`, `xml:lang`).
+
+```mermaid
+flowchart TB
+  teiCorpus["teiCorpus (1)"]
+  teiCorpus --> corpusHeader["teiHeader (corpus)"]
+  teiCorpus --> teiDoc["TEI (×528k)"]
+
+  subgraph TEI_DOC ["Structure d'un TEI"]
+    teiDoc --> docHeader["teiHeader (document)"]
+    teiDoc --> docText["text @xml:lang"]
+    teiDoc --> docStandOff["standOff/listAnnotation"]
+    docText --> docBody["body"] --> docDiv["div @type"]
+    docDiv --> docHead["head"]
+    docDiv --> docP["p (texte principal)"]
+  end
+
+  subgraph METADATA ["Extraits de métadonnées"]
+    docHeader --> fileDesc["fileDesc → titleStmt, publicationStmt, sourceDesc/biblStruct/idno[type]"]
+    docHeader --> profileDesc["profileDesc/textClass/keywords/term[type]"]
+    profileDesc --> termClass["term type='class' | 'crawl' | 'domain' | 'suffix' | 'published' | ..."]
+    docHeader --> revisionDesc["revisionDesc/change (md5_text, chars)"]
+  end
+```
+
+### 4.2 Détails par niveau
+
+* **`<teiCorpus>`** : titre global, publisher, date, source.
+* **`<TEI xml:id>`** : identifiant stable (utilisé en priorité pour `doc_id`).
+* **`teiHeader` document** :
+  * `fileDesc/titleStmt/title` et `respStmt` (origine extraction),
+  * `publicationStmt` (publisher, availability/licence, date `@when`, pubPlace),
+  * `sourceDesc/biblStruct/idno@type` (URL, chemin compressé, md5_html),
+  * `profileDesc/langUsage/language@ident` (≈528k occurrences),
+  * `textClass/keywords/term@type` : **labels potentiels** (`ideology` si présent, sinon `crawl`, `class`, etc.).
+* **`text@xml:lang`** : bloc supervisé ; contient `body/div/head` + `p` (présent pour chaque doc).
+* **`revisionDesc/change`** : méta calculées (md5_text, chars) utilisables pour QA.
+
+---
+
+## 5. Modélisation (Mermaid)
+
+### 5.1 Flux core V4
+
+```mermaid
+flowchart LR
+  subgraph CLI ["Entrée utilisateur (CLI / Makefile)"]
+    cli_prepare["python core_prepare.py\n--profile --override..."]
+    cli_train["python core_train.py\n--profile --override..."]
+    cli_eval["python core_evaluate.py\n--profile --override...\n[--only-family] [--dry-run]"]
+  end
+
+  subgraph CONFIGS ["Configs YAML (source unique de vérité)"]
+    cfg_profile["configs/profiles/*.yml\nprofile, corpus_id, view, modality,\nlabel_field(s), label_map, train_prop,\nmin_chars, max_tokens, balance_*,\nfamilies, models_*, hardware_preset,\ndebug_mode, seed"]
+    cfg_corpora["configs/common/corpora.yml\ncorpus_id → corpus_path, encoding,\ndefault_modality, notes"]
+    cfg_balance["configs/common/balance.yml\nstrategies: none, alpha_total,\ncap_docs, cap_tokens (TODO)\n+ presets (alpha, total_docs, cap_per_label, ...)"]
+    cfg_hardware["configs/common/hardware.yml\npresets: small, medium, lab\nram_gb, max_procs, blas_threads,\ntsv_chunk_rows, spacy_shard_docs"]
+    cfg_models["configs/common/models.yml\nfamilles: spacy / sklearn / hf\nhyperparams: epochs, lr,\nvectorizer, estimator, trainer_params..."]
+    cfg_labelmaps["configs/label_maps/*.yml\nmapping label_raw → label\n+ unknown_labels.policy"]
+  end
+
+  subgraph CORE_UTILS ["core_utils.resolve_profile_base()"]
+    core_utils["Fusion profil + overrides + commons\n→ params (dict unifié)"]
+    blas_env["set_blas_threads()\n→ OMP_NUM_THREADS / MKL / OPENBLAS"]
+  end
+
+  subgraph RAW ["Données brutes"]
+    tei_xml["data/raw/{corpus_id}/corpus.xml\nTEI complet (textes + <term> + modalités)"]
+  end
+
+  subgraph PREPARE ["core_prepare.py\n(build_view + build_formats)"]
+    prep_stream["Streaming TEI\niterparse(<TEI>) + elem.clear()"]
+    prep_extract["Extraction par doc\nid(xml:id), text (<text>), modality, label_raw\nlabel_field ou label_fields"]
+    prep_labelmap["load_label_map()\nlabel_raw → label\nmatch exact + label normalisé"]
+    prep_filters["Filtres\nmin_chars, max_tokens (tokenizer split/simple/spacy), modality"]
+    prep_balance["apply_balance()\n• none\n• alpha_total\n• cap_docs\n• cap_tokens (placeholder)"]
+    prep_split["Split train/job\ntrain_prop + seed"]
+    tsv_train["data/interim/{corpus_id}/{view}/train.tsv"]
+    tsv_job["data/interim/{corpus_id}/{view}/job.tsv"]
+    meta_view["meta_view.json"]
+    spacy_train["data/processed/{corpus_id}/{view}/spacy/train.spacy"]
+    spacy_job["data/processed/{corpus_id}/{view}/spacy/job.spacy"]
+    meta_formats["meta_formats.json\n(par famille)"]
+  end
+
+  subgraph TRAIN_CORE ["core_train.py"]
+    train_select_models["Construction models_to_train\n(families + models_*)"]
+
+    subgraph TRAIN_CHECK ["Famille 'check'"]
+      check_in["train.tsv"]
+      check_out["meta_model.json (stats)"]
+    end
+
+    subgraph TRAIN_SPACY ["Famille 'spacy'"]
+      spacy_in["Préférence DocBin (train.spacy)\nFallback train.tsv"]
+      spacy_train_loop["Training TextCat"]
+      spacy_model_dir["models/{corpus_id}/{view}/spacy/{model_id}/..."]
+    end
+
+    subgraph TRAIN_SK ["Famille 'sklearn'"]
+      sk_in["train.tsv"]
+      sk_vec_clf["vectorizer + estimator"]
+      sk_model_dir["models/{corpus_id}/{view}/sklearn/{model_id}/..."]
+    end
+
+    subgraph TRAIN_HF ["Famille 'hf' (stub)"]
+      hf_in["train.tsv"]
+      hf_stub["train_hf_model() TODO"]
+      hf_model_dir["models/{corpus_id}/{view}/hf/{model_id}/..."]
+    end
+  end
+
+  subgraph EVAL_CORE ["core_evaluate.py"]
+    eval_load_models["Sélection models_to_eval"]
+    eval_job_src["job.tsv (ou fallback train.tsv)"]
+    eval_check["eval_check_model()"]
+    eval_spacy["eval_spacy_model()"]
+    eval_sk["eval_sklearn_model()"]
+    eval_hf["eval_hf_model() stub"]
+    metrics_json["metrics.json"]
+    clf_report["classification_report.txt"]
+    meta_eval["meta_eval.json"]
+  end
+
+  tei_xml --> prep_stream --> prep_extract --> prep_labelmap --> prep_filters --> prep_balance --> prep_split
+  prep_split --> tsv_train
+  prep_split --> tsv_job
+  tsv_train --> spacy_train --> meta_formats
+  tsv_job --> spacy_job --> meta_formats
+  tsv_train --> meta_view
+  tsv_job --> meta_view
+
+  tsv_train --> check_in --> check_out
+  tsv_train --> sk_in --> sk_vec_clf --> sk_model_dir
+  spacy_train --> spacy_in --> spacy_train_loop --> spacy_model_dir
+  tsv_train --> hf_in --> hf_stub --> hf_model_dir
+
+  sk_model_dir --> eval_load_models
+  spacy_model_dir --> eval_load_models
+  hf_model_dir --> eval_load_models
+  check_out --> eval_load_models
+  tsv_job --> eval_job_src
+
+  eval_job_src --> eval_check --> metrics_json
+  eval_job_src --> eval_spacy --> metrics_json
+  eval_job_src --> eval_sk --> metrics_json
+  eval_job_src --> eval_hf --> metrics_json
+
+  eval_check --> clf_report
+  eval_spacy --> clf_report
+  eval_sk --> clf_report
+  eval_hf --> clf_report
+
+  eval_check --> meta_eval
+  eval_spacy --> meta_eval
+  eval_sk --> meta_eval
+  eval_hf --> meta_eval
+```
+
+### 5.2 Orchestration & pré-scripts
+
+```mermaid
+flowchart TB
+  subgraph USER ["Dev / utilisateur"]
+    user_shell["Terminal / IDE"]
+  end
+
+  subgraph ORCH ["Orchestration (optionnelle)"]
+    make_v4["Makefile V4\nlist_profiles, check_profile,\nprepare, train, evaluate, pipeline"]
+    cli_direct["CLI direct\npython scripts/core/*.py"]
+  end
+
+  subgraph PRE_SCRIPTS ["Pré-scripts (validation / labellisation)"]
+    pre_check["scripts/pre/pre_check_config.py\nvalide profil complet"]
+    ideo_skel["scripts/pre/make_ideology_skeleton.py\nTEI → squelette label_map\n+ actors_counts_*.tsv"]
+  end
+
+  subgraph CFG ["Configs & profils"]
+    cfg_prof["configs/profiles/*.yml"]
+    cfg_common["configs/common/*.yml"]
+    cfg_labels["configs/label_maps/*.yml"]
+  end
+
+  subgraph CORE ["Core V4 (config-first)"]
+    core_prepare["core_prepare.py"]
+    core_train["core_train.py"]
+    core_eval["core_evaluate.py"]
+  end
+
+  subgraph DATA ["Hiérarchie data/models/reports"]
+    data_interim["data/interim/{corpus}/{view}/..."]
+    data_proc["data/processed/{corpus}/{view}/..."]
+    models_store["models/{corpus}/{view}/{family}/{model_id}/..."]
+    reports_store["reports/{corpus}/{view}/{family}/{model_id}/..."]
+  end
+
+  user_shell --> ORCH
+  ORCH --> PRE_SCRIPTS
+  ORCH --> CORE
+  PRE_SCRIPTS --> CFG
+  CFG --> CORE
+  CORE --> DATA
+```
+
 #### `hardware.yml`
 
 * Déclare des presets machine.

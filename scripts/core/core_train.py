@@ -5,10 +5,15 @@ import csv
 import json
 import os
 import random
+import sys
 import importlib
 from collections import Counter
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
+
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
 
 import joblib
 

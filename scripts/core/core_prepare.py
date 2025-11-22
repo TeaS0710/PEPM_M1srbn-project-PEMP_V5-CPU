@@ -6,9 +6,14 @@ import json
 import os
 import random
 import re
+import sys
 from collections import Counter, defaultdict
 from typing import Any, Dict, Iterable, List, Optional, Tuple
 from pathlib import Path
+
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
 
 import xml.etree.ElementTree as ET
 
@@ -96,14 +101,14 @@ def _get_spacy_nlp(lang: str):
 def count_tokens(text: str, tokenizer_name: str) -> int:
     """
     tokenizer_name:
-      - 'split'  -> text.split() (whitespace)
-      - 'simple' -> segmentation simple (fallback historique)
-      - 'spacy:<lang>' (ex: 'spacy:fr', 'spacy:xx')
+      - 'split' / 'whitespace' -> text.split() (tokenisation espaces)
+      - 'simple'               -> segmentation simple (fallback historique)
+      - 'spacy:<lang>'         -> ex: 'spacy:fr', 'spacy:xx'
     """
     name = (tokenizer_name or "split").strip().lower()
     if name == "simple":
         return len([t for t in text.replace("\n", " ").split(" ") if t])
-    if name == "split":
+    if name in {"split", "whitespace"}:
         return len(text.split())
     if name.startswith("spacy:"):
         lang = name.split(":", 1)[1] or "xx"
@@ -173,17 +178,19 @@ def _local_name(tag: str) -> str:
 
 def iter_tei_docs(tei_path: str) -> Iterable[ET.Element]:
     """
-    Itérer sur les documents TEI.
+    Itérer sur les documents TEI en considérant chaque élément <TEI> comme
+    un document complet (teiHeader + text).
 
-    NOTE : Ici on considère que chaque <text> correspond à un document.
-    Adapte cette fonction si ton schéma TEI est différent
-    (ex: <TEI> par doc, <div type='article'>, etc.).
+    Cette approche est alignée sur les corpus fournis (racine <teiCorpus>
+    contenant plusieurs <TEI>), ce qui garantit que les métadonnées du
+    header (label, modality, id…) restent accessibles au moment de
+    l'extraction.
     """
     context = ET.iterparse(tei_path, events=("end",))
-    for event, elem in context:
-        if _local_name(elem.tag) == "text":
+    for _event, elem in context:
+        if _local_name(elem.tag) == "TEI":
             yield elem
-            # Libérer la mémoire
+            # Libérer la mémoire pour l'élément et ses descendants
             elem.clear()
 
 
@@ -202,12 +209,28 @@ def extract_term(elem: ET.Element, term_type: str) -> Optional[str]:
     return None
 
 
+def normalize_label_value(value: str) -> str:
+    """
+    Normaliser une valeur de label pour matcher des clés de mapping,
+    indépendamment des séparateurs (espaces, tirets, slash).
+
+    Exemples :
+      "crawl-actionfrancaise-20251003_000000" → "crawl_actionfrancaise_20251003_000000"
+      "Far Left" → "far_left"
+    """
+    norm = value.strip().lower()
+    norm = re.sub(r"[\s/\\]+", "_", norm)
+    norm = re.sub(r"[^0-9a-zA-Z_]+", "_", norm)
+    norm = re.sub(r"_+", "_", norm)
+    return norm.strip("_")
+
+
 def extract_doc_id(elem: ET.Element, fallback_idx: int) -> str:
     """
     Essayer de récupérer un identifiant de document dans les attributs TEI,
     sinon utiliser un index numérique.
     """
-    # Exemples possibles: @xml:id sur <text>, @n, etc.
+    # Exemples possibles: @xml:id sur <TEI>, @n, etc.
     xml_id = elem.get("{http://www.w3.org/XML/1998/namespace}id") or elem.get("xml:id")
     if xml_id:
         return str(xml_id)
@@ -220,10 +243,20 @@ def extract_doc_id(elem: ET.Element, fallback_idx: int) -> str:
 def extract_text(elem: ET.Element) -> str:
     """
     Extraire le texte brut du document TEI.
-    Ici c'est très basique : concatenation de tous les .itertext().
-    À adapter si besoin (ex: ignorer certaines zones).
+
+    On privilégie le contenu du bloc <text> (qui représente l'article) si
+    présent, afin d'éviter d'inclure le teiHeader dans le texte supervisé.
+    Fallback : concaténation naïve de tous les textes.
     """
-    text = " ".join(t.strip() for t in elem.itertext() if t.strip())
+    # Essayer de cibler le premier descendant <text>
+    text_node = None
+    for child in elem.iter():
+        if _local_name(child.tag) == "text":
+            text_node = child
+            break
+
+    target = text_node if text_node is not None else elem
+    text = " ".join(t.strip() for t in target.itertext() if t.strip())
     return text
 
 
@@ -245,7 +278,7 @@ def extract_modality(elem: ET.Element, params: Dict[str, Any]) -> str:
     return "unknown"
 
 
-def extract_label_raw(elem: ET.Element, label_field: Optional[str]) -> Optional[str]:
+def extract_label_raw(elem: ET.Element, label_field: Optional[Any]) -> Optional[str]:
     """
     Extraire le label brut à partir du TEI, en fonction de label_field.
     Par défaut, on cherche un <term type='label_field'>.
@@ -256,7 +289,17 @@ def extract_label_raw(elem: ET.Element, label_field: Optional[str]) -> Optional[
     """
     if not label_field:
         return None
-    return extract_term(elem, label_field)
+
+    if isinstance(label_field, (list, tuple)):
+        fields = list(label_field)
+    else:
+        fields = [label_field]
+
+    for field in fields:
+        val = extract_term(elem, field)
+        if val:
+            return val
+    return None
 
 
 # ----------------- Vue : TEI -> TSV -----------------
@@ -269,11 +312,16 @@ def build_view(params: Dict[str, Any], dry_run: bool = False) -> Dict[str, Any]:
     """
     corpus = params["corpus"]
     tei_path = corpus["corpus_path"]
+    label_fields = params.get("label_fields")
     label_field = params.get("label_field")
+    # Priorité à label_fields (liste) si présent, sinon label_field (héritage)
+    fields_for_labels = label_fields if label_fields is not None else label_field
     label_map_path = params.get("label_map")
     label_map = None
     if label_map_path:
-        label_map = load_label_map(label_map_path)
+        raw_map = load_label_map(label_map_path)
+        # Normaliser les clés du mapping pour absorber les variantes d'écriture
+        label_map = {normalize_label_value(str(k)): v for k, v in raw_map.items()}
 
     modality_filter = params.get("modality")  # ex: "web", "asr", etc.
     train_prop = float(params.get("train_prop", 0.8))
@@ -317,17 +365,19 @@ def build_view(params: Dict[str, Any], dry_run: bool = False) -> Dict[str, Any]:
         if modality_filter and doc_modality != modality_filter:
             continue
 
-        label_raw = extract_label_raw(elem, label_field)
+        label_raw = extract_label_raw(elem, fields_for_labels)
         if not label_raw:
             continue
 
+        label_norm = normalize_label_value(label_raw)
+
         if label_map:
-            mapped = label_map.get(label_raw)
+            mapped = label_map.get(label_norm)
             if not mapped:
                 continue
             label = mapped
         else:
-            label = label_raw
+            label = label_norm
 
         label_counts[label] += 1
         docs.append(
@@ -409,6 +459,7 @@ def build_view(params: Dict[str, Any], dry_run: bool = False) -> Dict[str, Any]:
         "view": view,
         "modality_filter": modality_filter,
         "label_field": label_field,
+        "label_fields": label_fields,
         "label_map": label_map_path,
         "balance_strategy": balance_strategy,
         "balance_preset": balance_preset,
@@ -428,13 +479,6 @@ def build_view(params: Dict[str, Any], dry_run: bool = False) -> Dict[str, Any]:
     }
     if params.get("class_weights") is not None:
         meta["label_weights"] = params["class_weights"]
-
-
-    # Si on utilise une stratégie par poids, on loggue aussi les poids par label
-    class_weights = params.get("class_weights")
-    if class_weights is not None:
-        meta["label_weights"] = class_weights
-
 
     if dry_run:
         print("[core_prepare] Dry-run activé, aucun TSV écrit.")
@@ -827,6 +871,10 @@ def main() -> None:
     meta_view = build_view(params, dry_run=args.dry_run)
     if not args.dry_run:
         build_formats(params, meta_view)
+
+
+if __name__ == "__main__":
+    main()
 
 
 

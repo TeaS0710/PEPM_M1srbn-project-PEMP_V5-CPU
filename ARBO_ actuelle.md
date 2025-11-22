@@ -34,7 +34,7 @@ teas@teas-laptop13:~/programmes/PEPM_M1srbn-project-PEMP_V4-CPU-main$ tree
 ├── dev_V4.md
 ├── logs
 ├── makefile
-├── modélisation.md
+├── (modélisation intégrée à dev_V4.md)
 ├── models
 │   └── web1
 │       └── ideology_global

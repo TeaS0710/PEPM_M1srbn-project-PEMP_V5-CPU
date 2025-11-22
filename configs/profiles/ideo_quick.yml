@@ -7,7 +7,11 @@ corpus_id: "web1"
 view: "ideology_global"
 modality: "web"
 
-label_field: "ideology"
+label_field: "ideology"  # héritage (si présent dans le TEI)
+label_fields:
+  - "ideology"          # priorité : champ dédié si disponible
+  - "domain"            # fallback : domaine du site (présent dans le corpus actuel)
+  - "crawl"             # fallback legacy
 label_map: "configs/label_maps/ideology_global.yml"
 
 train_prop: 0.8

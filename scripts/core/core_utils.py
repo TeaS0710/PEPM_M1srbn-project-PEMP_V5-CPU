@@ -144,7 +144,7 @@ def resolve_profile_base(profile_name: str, overrides: Optional[List[str]] = Non
     # Champs simples copiés tels quels si présents
     simple_keys = [
         "corpus_id", "view", "modality",
-        "label_field", "label_map",
+        "label_field", "label_fields", "label_map",
         "train_prop", "min_chars", "max_tokens",
         "tokenizer", "dedup_on",
         "families",

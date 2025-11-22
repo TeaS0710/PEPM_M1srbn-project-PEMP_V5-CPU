@@ -5,8 +5,13 @@ import csv
 import json
 import os
 import random
+import sys
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
+
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
 
 import joblib
 from sklearn.metrics import accuracy_score, f1_score, classification_report
@@ -16,6 +21,7 @@ from scripts.core.core_utils import (
     debug_print_params,
     PIPELINE_VERSION,
     apply_global_seed,
+    log,
 
 )
 
@@ -454,7 +460,6 @@ def main() -> None:
         debug_print_params(params)
 
     # Seed globale optionnelle (comme dans core_train)
-    from scripts.core.core_utils import apply_global_seed, log
     seed_applied = apply_global_seed(params.get("seed"))
     log("evaluate", "seed", f"Global seed: {'appliquée' if seed_applied else 'non appliquée'} ({params.get('seed')})")
 
