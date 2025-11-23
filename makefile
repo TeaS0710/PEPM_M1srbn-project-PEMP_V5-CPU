@@ -1,61 +1,67 @@
-PYTHON			?=python3
+PYTHON                  ?=python3
 ifneq ("$(wildcard .venv/bin/python)","")
-PYTHON			:=.venv/bin/python
+PYTHON                  :=.venv/bin/python
 endif
 
-PROFILE			?=ideo_quick
+PROFILE                 ?= ideo_quick
 
-CORPUS_ID		?=web1
-VIEW			?=ideology_global
-TRAIN_PROP		?=
-BALANCE_STRATEGY	?=
-BALANCE_PRESET		?=
-HARDWARE_PRESET		?=
-FAMILIES		?=
-SEED			?=
-MAX_DOCS_SKLEARN	?=
-MAX_DOCS_SPACY		?=
+# Corpus / vue par défaut (overridables en ligne de commande)
+CORPUS_ID               ?= web1
+VIEW                    ?= ideology_global
 
-OVERRIDES		?=
+TRAIN_PROP              ?=
+BALANCE_STRATEGY        ?=
+BALANCE_PRESET          ?=
+HARDWARE_PRESET         ?=
+FAMILIES                ?=
+SEED                    ?=
+MAX_DOCS_SKLEARN        ?=
+MAX_DOCS_SPACY          ?=
+MAX_DOCS_HF             ?=
 
-CORPUS_XML			?=data/raw/$(CORPUS_ID)/corpus.xml
-IDEO_MAP_OUT		?=configs/label_maps/ideology_actors.yml
-IDEO_REPORT_OUT		?=data/configs/actors_counts_$(CORPUS_ID).tsv
-MIN_CHARS_IDEO		?=200
-TOP_VARIANTS_IDEO	?=5
+OVERRIDES               ?=
+FAMILY                  ?=
 
-export PYTHONPATH	:=.
+CORPUS_XML              ?= data/raw/$(CORPUS_ID)/corpus.xml
+IDEO_MAP_OUT            ?= configs/label_maps/ideology_actors.yml
+IDEO_REPORT_OUT         ?= data/configs/actors_counts_$(CORPUS_ID).tsv
+MIN_CHARS_IDEO          ?= 200
+TOP_VARIANTS_IDEO       ?= 5
 
-AUTO_OVERRIDES		:=
+export PYTHONPATH       :=.
+
+AUTO_OVERRIDES          :=
 
 ifneq ($(strip $(CORPUS_ID)),)
-AUTO_OVERRIDES		+=corpus_id=$(CORPUS_ID)
+AUTO_OVERRIDES          +=corpus_id=$(CORPUS_ID)
 endif
 ifneq ($(strip $(TRAIN_PROP)),)
-AUTO_OVERRIDES		+=train_prop=$(TRAIN_PROP)
+AUTO_OVERRIDES          +=train_prop=$(TRAIN_PROP)
 endif
 ifneq ($(strip $(BALANCE_STRATEGY)),)
-AUTO_OVERRIDES		+=balance_strategy=$(BALANCE_STRATEGY)
+AUTO_OVERRIDES          +=balance_strategy=$(BALANCE_STRATEGY)
 endif
 ifneq ($(strip $(BALANCE_PRESET)),)
-AUTO_OVERRIDES		+=balance_preset=$(BALANCE_PRESET)
+AUTO_OVERRIDES          +=balance_preset=$(BALANCE_PRESET)
 endif
 ifneq ($(strip $(HARDWARE_PRESET)),)
-AUTO_OVERRIDES		+=hardware_preset=$(HARDWARE_PRESET)
+AUTO_OVERRIDES          +=hardware_preset=$(HARDWARE_PRESET)
 endif
 ifneq ($(strip $(FAMILIES)),)
-AUTO_OVERRIDES		+=families=$(FAMILIES)
+AUTO_OVERRIDES          +=families=$(FAMILIES)
 endif
 ifneq ($(strip $(SEED)),)
-AUTO_OVERRIDES		+=seed=$(SEED)
+AUTO_OVERRIDES          +=seed=$(SEED)
 endif
 ifneq ($(strip $(MAX_DOCS_SKLEARN)),)
-AUTO_OVERRIDES		+=max_train_docs_sklearn=$(MAX_DOCS_SKLEARN)
+AUTO_OVERRIDES          +=max_train_docs_sklearn=$(MAX_DOCS_SKLEARN)
 endif
 ifneq ($(strip $(MAX_DOCS_SPACY)),)
-AUTO_OVERRIDES		+=max_train_docs_spacy=$(MAX_DOCS_SPACY)
+AUTO_OVERRIDES          +=max_train_docs_spacy=$(MAX_DOCS_SPACY)
 endif
-
+ifneq ($(strip $(MAX_DOCS_HF)),)
+AUTO_OVERRIDES          +=max_train_docs_hf=$(MAX_DOCS_HF)
+endif
 ALL_OVERRIDES		:=$(AUTO_OVERRIDES) $(OVERRIDES)
 
 OVR_FLAGS		=$(foreach o,$(ALL_OVERRIDES),--override $(o))
@@ -91,17 +97,18 @@ help:
 	@echo "  TRAIN_PROP       -> train_prop"
 	@echo "  BALANCE_STRATEGY -> balance_strategy"
 	@echo "  BALANCE_PRESET   -> balance_preset (preset dans balance.yml)"
-	@echo "  HARDWARE_PRESET  -> hardware_preset (preset dans hardware.yml)"
-	@echo "  FAMILIES         -> families (ex: spacy,sklearn)"
-	@echo "  SEED             -> seed"
-	@echo "  MAX_DOCS_SKLEARN -> max_train_docs_sklearn"
-	@echo "  MAX_DOCS_SPACY   -> max_train_docs_spacy"
-	@echo ""
-@echo "Overrides bruts :"
-@echo "  OVERRIDES        -> liste libre de \"cle=val\" (ex: OVERRIDES=\"debug_mode=true\")"
-@echo "  Exemples idéologie : OVERRIDES=\"ideology.granularity=five_way\""
-@echo "                     OVERRIDES=\"ideology.label_source=derived,actors.include=['ACTEUR']\""
-	@echo ""
+        @echo "  HARDWARE_PRESET  -> hardware_preset (preset dans hardware.yml)"
+        @echo "  FAMILIES         -> families (ex: spacy,sklearn)"
+        @echo "  SEED             -> seed"
+        @echo "  MAX_DOCS_SKLEARN -> max_train_docs_sklearn"
+        @echo "  MAX_DOCS_SPACY   -> max_train_docs_spacy"
+        @echo "  MAX_DOCS_HF      -> max_train_docs_hf"
+        @echo ""
+        @echo "Overrides bruts :"
+        @echo "  OVERRIDES        -> liste libre de \"cle=val\" (ex: OVERRIDES=\"debug_mode=true\")"
+        @echo "  Exemples idéologie : OVERRIDES=\"ideology.view=five_way\""
+        @echo "                     OVERRIDES=\"ideology.unknown_actors.policy=keep\""
+        @echo ""
 	@echo "Mise en place :"
 	@echo "  make setup                      # venv (si besoin) + install deps + arbo + check global"
 	@echo ""
@@ -210,46 +217,46 @@ run:
 	@if [ "$(STAGE)" = "check" ]; then \
 		$(MAKE) check PROFILE=$(PROFILE) OVERRIDES="$(OVERRIDES)" \
 		CORPUS_ID="$(CORPUS_ID)" TRAIN_PROP="$(TRAIN_PROP)" \
-		BALANCE_STRATEGY="$(BALANCE_STRATEGY)" BALANCE_PRESET="$(BALANCE_PRESET)" \
-		HARDWARE_PRESET="$(HARDWARE_PRESET)" FAMILIES="$(FAMILIES)" \
-		SEED="$(SEED)" MAX_DOCS_SKLEARN="$(MAX_DOCS_SKLEARN)" \
-		MAX_DOCS_SPACY="$(MAX_DOCS_SPACY)"; \
-	elif [ "$(STAGE)" = "prepare" ]; then \
-		$(MAKE) prepare PROFILE=$(PROFILE) FAMILY="$(FAMILY)" \
-		OVERRIDES="$(OVERRIDES)" CORPUS_ID="$(CORPUS_ID)" TRAIN_PROP="$(TRAIN_PROP)" \
-		BALANCE_STRATEGY="$(BALANCE_STRATEGY)" BALANCE_PRESET="$(BALANCE_PRESET)" \
-		HARDWARE_PRESET="$(HARDWARE_PRESET)" FAMILIES="$(FAMILIES)" \
-		SEED="$(SEED)" MAX_DOCS_SKLEARN="$(MAX_DOCS_SKLEARN)" \
-		MAX_DOCS_SPACY="$(MAX_DOCS_SPACY)"; \
-	elif [ "$(STAGE)" = "prepare_dry" ]; then \
-		$(MAKE) prepare_dry PROFILE=$(PROFILE) FAMILY="$(FAMILY)" \
-		OVERRIDES="$(OVERRIDES)" CORPUS_ID="$(CORPUS_ID)" TRAIN_PROP="$(TRAIN_PROP)" \
-		BALANCE_STRATEGY="$(BALANCE_STRATEGY)" BALANCE_PRESET="$(BALANCE_PRESET)" \
-		HARDWARE_PRESET="$(HARDWARE_PRESET)" FAMILIES="$(FAMILIES)" \
-		SEED="$(SEED)" MAX_DOCS_SKLEARN="$(MAX_DOCS_SKLEARN)" \
-		MAX_DOCS_SPACY="$(MAX_DOCS_SPACY)"; \
-	elif [ "$(STAGE)" = "train" ]; then \
-		$(MAKE) train PROFILE=$(PROFILE) FAMILY="$(FAMILY)" \
-		OVERRIDES="$(OVERRIDES)" CORPUS_ID="$(CORPUS_ID)" TRAIN_PROP="$(TRAIN_PROP)" \
-		BALANCE_STRATEGY="$(BALANCE_STRATEGY)" BALANCE_PRESET="$(BALANCE_PRESET)" \
-		HARDWARE_PRESET="$(HARDWARE_PRESET)" FAMILIES="$(FAMILIES)" \
-		SEED="$(SEED)" MAX_DOCS_SKLEARN="$(MAX_DOCS_SKLEARN)" \
-		MAX_DOCS_SPACY="$(MAX_DOCS_SPACY)"; \
-	elif [ "$(STAGE)" = "evaluate" ]; then \
-		$(MAKE) evaluate PROFILE=$(PROFILE) FAMILY="$(FAMILY)" \
-		OVERRIDES="$(OVERRIDES)" CORPUS_ID="$(CORPUS_ID)" TRAIN_PROP="$(TRAIN_PROP)" \
-		BALANCE_STRATEGY="$(BALANCE_STRATEGY)" BALANCE_PRESET="$(BALANCE_PRESET)" \
-		HARDWARE_PRESET="$(HARDWARE_PRESET)" FAMILIES="$(FAMILIES)" \
-		SEED="$(SEED)" MAX_DOCS_SKLEARN="$(MAX_DOCS_SKLEARN)" \
-		MAX_DOCS_SPACY="$(MAX_DOCS_SPACY)"; \
-	elif [ "$(STAGE)" = "pipeline" ] || [ -z "$(STAGE)" ]; then \
-		$(MAKE) pipeline PROFILE=$(PROFILE) FAMILY="$(FAMILY)" \
-		OVERRIDES="$(OVERRIDES)" CORPUS_ID="$(CORPUS_ID)" TRAIN_PROP="$(TRAIN_PROP)" \
-		BALANCE_STRATEGY="$(BALANCE_STRATEGY)" BALANCE_PRESET="$(BALANCE_PRESET)" \
-		HARDWARE_PRESET="$(HARDWARE_PRESET)" FAMILIES="$(FAMILIES)" \
-		SEED="$(SEED)" MAX_DOCS_SKLEARN="$(MAX_DOCS_SKLEARN)" \
-		MAX_DOCS_SPACY="$(MAX_DOCS_SPACY)"; \
-	else \
+                BALANCE_STRATEGY="$(BALANCE_STRATEGY)" BALANCE_PRESET="$(BALANCE_PRESET)" \
+                HARDWARE_PRESET="$(HARDWARE_PRESET)" FAMILIES="$(FAMILIES)" \
+                SEED="$(SEED)" MAX_DOCS_SKLEARN="$(MAX_DOCS_SKLEARN)" \
+                MAX_DOCS_SPACY="$(MAX_DOCS_SPACY)" MAX_DOCS_HF="$(MAX_DOCS_HF)"; \
+        elif [ "$(STAGE)" = "prepare" ]; then \
+                $(MAKE) prepare PROFILE=$(PROFILE) FAMILY="$(FAMILY)" \
+                OVERRIDES="$(OVERRIDES)" CORPUS_ID="$(CORPUS_ID)" TRAIN_PROP="$(TRAIN_PROP)" \
+                BALANCE_STRATEGY="$(BALANCE_STRATEGY)" BALANCE_PRESET="$(BALANCE_PRESET)" \
+                HARDWARE_PRESET="$(HARDWARE_PRESET)" FAMILIES="$(FAMILIES)" \
+                SEED="$(SEED)" MAX_DOCS_SKLEARN="$(MAX_DOCS_SKLEARN)" \
+                MAX_DOCS_SPACY="$(MAX_DOCS_SPACY)" MAX_DOCS_HF="$(MAX_DOCS_HF)"; \
+        elif [ "$(STAGE)" = "prepare_dry" ]; then \
+                $(MAKE) prepare_dry PROFILE=$(PROFILE) FAMILY="$(FAMILY)" \
+                OVERRIDES="$(OVERRIDES)" CORPUS_ID="$(CORPUS_ID)" TRAIN_PROP="$(TRAIN_PROP)" \
+                BALANCE_STRATEGY="$(BALANCE_STRATEGY)" BALANCE_PRESET="$(BALANCE_PRESET)" \
+                HARDWARE_PRESET="$(HARDWARE_PRESET)" FAMILIES="$(FAMILIES)" \
+                SEED="$(SEED)" MAX_DOCS_SKLEARN="$(MAX_DOCS_SKLEARN)" \
+                MAX_DOCS_SPACY="$(MAX_DOCS_SPACY)" MAX_DOCS_HF="$(MAX_DOCS_HF)"; \
+        elif [ "$(STAGE)" = "train" ]; then \
+                $(MAKE) train PROFILE=$(PROFILE) FAMILY="$(FAMILY)" \
+                OVERRIDES="$(OVERRIDES)" CORPUS_ID="$(CORPUS_ID)" TRAIN_PROP="$(TRAIN_PROP)" \
+                BALANCE_STRATEGY="$(BALANCE_STRATEGY)" BALANCE_PRESET="$(BALANCE_PRESET)" \
+                HARDWARE_PRESET="$(HARDWARE_PRESET)" FAMILIES="$(FAMILIES)" \
+                SEED="$(SEED)" MAX_DOCS_SKLEARN="$(MAX_DOCS_SKLEARN)" \
+                MAX_DOCS_SPACY="$(MAX_DOCS_SPACY)" MAX_DOCS_HF="$(MAX_DOCS_HF)"; \
+        elif [ "$(STAGE)" = "evaluate" ]; then \
+                $(MAKE) evaluate PROFILE=$(PROFILE) FAMILY="$(FAMILY)" \
+                OVERRIDES="$(OVERRIDES)" CORPUS_ID="$(CORPUS_ID)" TRAIN_PROP="$(TRAIN_PROP)" \
+                BALANCE_STRATEGY="$(BALANCE_STRATEGY)" BALANCE_PRESET="$(BALANCE_PRESET)" \
+                HARDWARE_PRESET="$(HARDWARE_PRESET)" FAMILIES="$(FAMILIES)" \
+                SEED="$(SEED)" MAX_DOCS_SKLEARN="$(MAX_DOCS_SKLEARN)" \
+                MAX_DOCS_SPACY="$(MAX_DOCS_SPACY)" MAX_DOCS_HF="$(MAX_DOCS_HF)"; \
+        elif [ "$(STAGE)" = "pipeline" ] || [ -z "$(STAGE)" ]; then \
+                $(MAKE) pipeline PROFILE=$(PROFILE) FAMILY="$(FAMILY)" \
+                OVERRIDES="$(OVERRIDES)" CORPUS_ID="$(CORPUS_ID)" TRAIN_PROP="$(TRAIN_PROP)" \
+                BALANCE_STRATEGY="$(BALANCE_STRATEGY)" BALANCE_PRESET="$(BALANCE_PRESET)" \
+                HARDWARE_PRESET="$(HARDWARE_PRESET)" FAMILIES="$(FAMILIES)" \
+                SEED="$(SEED)" MAX_DOCS_SKLEARN="$(MAX_DOCS_SKLEARN)" \
+                MAX_DOCS_SPACY="$(MAX_DOCS_SPACY)" MAX_DOCS_HF="$(MAX_DOCS_HF)"; \
+        else \
 		echo "[run] Erreur : STAGE=$(STAGE) inconnu. Utiliser check|prepare|prepare_dry|train|evaluate|pipeline."; \
 		exit 1; \
 	fi

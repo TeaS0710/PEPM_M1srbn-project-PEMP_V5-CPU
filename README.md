@@ -26,17 +26,22 @@ Les variables Make principales : `PROFILE` (défaut `ideo_quick`), `OVERRIDES` (
 
 ### 2.1 Préparer une vue
 ```bash
-# Vue idéologie quick binaire (labels manuels)
+# Vue idéologie quick binaire (mode actors)
 make prepare PROFILE=ideo_quick
 
 # Variante 5 classes
-make prepare PROFILE=ideo_quick OVERRIDES="ideology.granularity=five_way"
+make prepare PROFILE=ideo_quick OVERRIDES="ideology.view=five_way"
 
-# Intra-camp gauche avec filtre d'acteurs
+# Intra-camp gauche avec filtre d'acteurs conservés
 make prepare PROFILE=ideo_quick \
-  OVERRIDES='ideology.granularity=intra_side,ideology.intra_side.side=left,actors.include=["MELENCHON","JLM"],actors.min_docs=25'
+  OVERRIDES='ideology.view=left_intra,ideology.unknown_actors.policy=keep,actors.include=["MELENCHON","JLM"],actors.min_docs=25'
 ```
 Sorties : `data/interim/{corpus}/{view}/train.tsv`, `job.tsv`, `meta_view.json`, `meta_formats.json`.
+
+# Générer/mettre à jour le mapping acteurs depuis un corpus TEI
+```bash
+make ideology_skeleton CORPUS_ID=web1
+```
 
 ### 2.2 Entraîner
 ```bash
@@ -74,7 +79,8 @@ Rapports sous `reports/{corpus}/{view}/{family}/{model_id}/` (`metrics.json`, `c
   - `configs/common/balance.yml` (équilibrage),
   - `configs/common/models.yml` (catalogue de modèles),
   - `configs/common/hardware.yml` (presets CPU/sharding).
-- Label maps : `configs/label_maps/*.yml` (binaire, five_way, intra-camp, global).
+- Idéologie : **source unique** `configs/label_maps/ideology_actors.yml` (mode `actors` avec vues `binary`, `five_way`, `left_intra`, `right_intra`).
+  - Les anciens mappings sont conservés en archive dans `configs/label_maps_legacy/`.
 - Overrides CLI via `OVERRIDES="cle=val,cle2=val2"` pour modifier ponctuellement un profil.
 
 ## 4. Comprendre le pipeline

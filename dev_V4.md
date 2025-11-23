@@ -58,13 +58,11 @@ flowchart TD
 ## 2. Audit détaillé du prepare
 
 ### 2.1 Résolution de label idéologique
-- Bloc `ideology` dans les profils :
-  - `granularity` : `binary` (gauche/droite), `five_way`, `intra_side`, ou `derived`.
-  - `label_source` : `manual` (champs d'annotation) ou `derived` (crawl/domain/party).
-  - `label_fields_manual` / `label_fields_derived` : ordre de fallback pour trouver une valeur non vide.
-  - `label_map` : chemin YAML appliqué après normalisation ; `unknown_labels` gère `drop|keep|other`.
-  - `intra_side` : restreint à un camp (left/right) avec son propre label_map si besoin.
-- Compatibilité arrière : si le bloc `ideology` est absent, on retombe sur `label_fields` + `label_map` historiques.
+- Bloc `ideology` dans les profils (mode par défaut : `actors`) :
+  - `actors_yaml` : unique source de vérité (`configs/label_maps/ideology_actors.yml`).
+  - `view` : `binary`, `five_way`, `left_intra`, `right_intra` (projection des annotations acteurs).
+  - `unknown_actors.policy` : `drop` ou `keep` (+ label optionnel).
+- Compatibilité arrière : `mode: legacy` reste possible pour tester les anciens mappings archivés dans `configs/label_maps_legacy/` (déprécié).
 
 ### 2.2 Filtrage et nettoyage
 - Filtres `min_chars`, `max_tokens`, `modality` appliqués avant split.
@@ -158,15 +156,16 @@ Notes d'implémentation :
 - `configs/common/balance.yml` : stratégies et presets d'équilibrage.
 - `configs/common/models.yml` : catalogue des modèles par famille (spaCy, sklearn, HF, check).
 - `configs/common/hardware.yml` : presets RAM/CPU, shards spaCy, limites de docs.
-- `configs/label_maps/*.yml` : mappings d'idéologie (binaire, five_way, intra_left/right, global…).
+- `configs/label_maps/ideology_actors.yml` : mapping acteurs unique (vues binary/five_way/left_intra/right_intra).
+- `configs/label_maps_legacy/` : anciens mappings conservés à titre d'archive (mode `legacy`).
 - `configs/profiles/*.yml` : expérience complète (corpus, vue, filtres, stratégie d'équilibrage, famille active, bloc `ideology`).
 
 ### 4.2 Overrides & Makefile
 - Variables Make usuelles : `PROFILE` (défaut `ideo_quick`), `OVERRIDES` (clé=val), `FAMILY` (filtre d'entraînement/éval).
 - Exemples d'override idéologie :
-  - `OVERRIDES="ideology.granularity=five_way"`
-  - `OVERRIDES="ideology.granularity=intra_side,ideology.intra_side.side=left"`
-  - `OVERRIDES='actors.include=["MELENCHON","MACRON"],actors.min_docs=50'`
+  - `OVERRIDES="ideology.view=five_way"`
+  - `OVERRIDES="ideology.view=left_intra"`
+  - `OVERRIDES='ideology.unknown_actors.policy=keep,actors.include=["MELENCHON"],actors.min_docs=50'`
 
 ## 5. Backlog V4 (fusion patch + todo)
 

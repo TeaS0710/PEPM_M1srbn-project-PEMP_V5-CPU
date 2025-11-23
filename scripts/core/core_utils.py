@@ -307,7 +307,9 @@ def debug_print_params(params: Dict[str, Any]) -> None:
 
     def _join_or_str(val: Any) -> str:
         if isinstance(val, str):
-            return val
+            # Autoriser une notation "spacy,sklearn" en string simple
+            parts = [p.strip() for p in val.split(",") if p.strip()]
+            return ", ".join(parts) if parts else val
         return ", ".join(map(str, val)) if val else "-"
 
     t1 = Table(title="Corpus & Profil", expand=True)

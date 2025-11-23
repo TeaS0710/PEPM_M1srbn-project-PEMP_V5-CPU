@@ -389,6 +389,8 @@ def resolve_ideology_label_actors(
 def resolve_ideology_label_legacy(
     row_meta: Dict[str, Any], ideology_cfg: Dict[str, Any]
 ) -> Tuple[Optional[str], Optional[str], str]:
+    """Compatibilité historique basée sur les anciens label_maps (déprécié)."""
+
     source = str(ideology_cfg.get("label_source", "manual")).strip().lower()
     granularity = str(ideology_cfg.get("granularity", "binary")).strip().lower()
 

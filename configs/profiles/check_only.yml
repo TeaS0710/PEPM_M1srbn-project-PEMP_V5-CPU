@@ -7,8 +7,12 @@ corpus_id: "web1"
 view: "ideology_global"
 modality: "web"
 
-label_field: "ideology"
-label_map: "configs/label_maps/ideology_global.yml"
+ideology:
+  mode: actors
+  actors_yaml: configs/label_maps/ideology_actors.yml
+  view: binary
+  unknown_actors:
+    policy: drop
 
 train_prop: 0.8
 min_chars: 200

@@ -9,7 +9,7 @@
     "domain",
     "crawl"
   ],
-  "label_map": "configs/label_maps/ideology_global.yml",
+  "label_map": "configs/label_maps/ideology_actors.yml",
   "balance_strategy": "alpha_total",
   "balance_preset": "uniform_small",
   "train_prop": 0.8,

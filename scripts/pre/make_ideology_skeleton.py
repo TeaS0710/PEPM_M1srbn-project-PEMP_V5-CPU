@@ -1,16 +1,16 @@
 #Projet PEPM By Yi Fan && Adrien
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-make_ideology_skeleton.py (V4 acteurs)
+"""make_ideology_skeleton.py (V4 acteurs)
 
-Parcourt un corpus TEI et met à jour le fichier unique
-configs/label_maps/ideology_actors.yml.
+Parcourt un corpus TEI et met à jour `configs/label_maps/ideology_actors.yml`.
 
-- Ajoute les nouveaux acteurs détectés
-- Met à jour les crawls listés pour les acteurs existants
-- Conserve les annotations manuelles (side_binary, global_five, ...)
-- Génère un rapport TSV des comptes par acteur
+Fonctionnalités :
+- Ajoute les nouveaux acteurs détectés dans le corpus.
+- Met à jour la liste `crawls` pour les acteurs existants sans écraser les
+  champs manuels (`side_binary`, `global_five`, `intra_left`, `intra_right`).
+- Conserve les acteurs existants absents du corpus (flag optionnel `stale`).
+- Génère un rapport TSV des comptes par acteur.
 """
 
 from __future__ import annotations
@@ -65,9 +65,9 @@ def parse_args():
     ap = argparse.ArgumentParser()
     ap.add_argument("--corpus", type=Path, required=True)
     ap.add_argument("--out-yaml", type=Path, default=Path("configs/label_maps/ideology_actors.yml"))
-    ap.add_argument("--out-report", type=Path, default=Path("data/configs/actors_counts.tsv"))
+    ap.add_argument("--out-report", type=Path, default=None)
     ap.add_argument("--min-chars", type=int, default=0)
-    ap.add_argument("--top-variants", type=int, default=3)
+    ap.add_argument("--top-variants", type=int, default=5)
     return ap.parse_args()
 
 
@@ -144,6 +144,11 @@ def main():
     if not args.corpus.exists():
         print(f"[ERR] corpus introuvable: {args.corpus}", file=sys.stderr)
         sys.exit(1)
+
+    # Déterminer le rapport TSV par défaut en fonction du corpus
+    if args.out_report is None:
+        corpus_id = args.corpus.parent.name or "corpus"
+        args.out_report = Path(f"data/configs/actors_counts_{corpus_id}.tsv")
 
     totals: Dict[str, int] = Counter()
     variants: Dict[str, Counter] = defaultdict(Counter)
