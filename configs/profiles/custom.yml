@@ -1,0 +1,39 @@
+# configs/profiles/custom.yml
+
+profile: "custom"
+description: "Profil custom polyvalent (idéologie par acteurs)"
+
+corpus_id: "web1"
+view: "ideology_global"
+modality: "web"
+
+ideology:
+  mode: actors
+  actors_yaml: configs/label_maps/ideology_actors.yml
+  view: global           # à overrider via OVERRIDES si besoin
+  unknown_actors:
+    policy: drop         # ou keep/other si tu veux explorer
+
+train_prop: 0.8
+min_chars: 200
+max_tokens: 512
+
+tokenizer: "whitespace"
+
+balance_strategy: "alpha_total"
+balance_preset: "default_alpha_total"
+
+families:
+  - "check"
+  - "spacy"
+  - "sklearn"
+
+models_spacy:
+  - "spacy_cnn_quick"
+
+models_sklearn:
+  - "tfidf_svm_quick"
+
+hardware_preset: "small"
+
+debug_mode: false

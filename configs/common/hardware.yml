@@ -1,0 +1,32 @@
+# configs/common/hardware.yml
+
+presets:
+  small:
+    desc: "Laptop / petite machine"
+    ram_gb: 8
+    max_procs: 2
+    blas_threads: 1
+    tsv_chunk_rows: 20000
+    spacy_shard_docs: 10000
+
+  medium:
+    desc: "Machine intermédiaire"
+    ram_gb: 16
+    max_procs: 4
+    blas_threads: 2
+    tsv_chunk_rows: 50000
+    spacy_shard_docs: 25000
+    max_train_docs_spacy: 50000
+    max_train_docs_sklearn: 50000
+    max_train_docs_hf: 20000
+
+  lab:
+    desc: "Machine labo / serveur"
+    ram_gb: 64
+    max_procs: 8
+    blas_threads: 2
+    tsv_chunk_rows: 100000
+    spacy_shard_docs: 50000
+    max_train_docs_spacy: 200000
+    max_train_docs_sklearn: 200000
+    max_train_docs_hf: 80000

@@ -1,0 +1,35 @@
+# configs/profiles/crawl_full.yml
+
+profile: "crawl_full"
+description: "Classification complète par label de crawl (sklearn + HF + checks)"
+
+corpus_id: "web1"
+view: "crawl"
+modality: "web"
+
+label_field: "crawl"
+label_map: null
+
+train_prop: 0.8
+min_chars: 200
+max_tokens: 512
+
+tokenizer: "whitespace"
+
+balance_strategy: "alpha_total"
+balance_preset: "default_alpha_total"
+
+families:
+  - "check"
+  - "sklearn"
+  - "hf"
+
+models_spacy: []
+models_sklearn:
+  - "tfidf_svm_quick"
+models_hf:
+  - "camembert_base"
+
+hardware_preset: "lab"
+
+debug_mode: false

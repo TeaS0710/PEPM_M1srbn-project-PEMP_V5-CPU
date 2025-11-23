@@ -1,0 +1,33 @@
+# configs/profiles/crawl_quick.yml
+
+profile: "crawl_quick"
+description: "Classification rapide par label de crawl (sklearn + checks)"
+
+corpus_id: "web1"
+view: "crawl"
+modality: "web"
+
+label_field: "crawl"
+label_map: null   # on peut laisser l'identité pour l'instant
+
+train_prop: 0.8
+min_chars: 280
+max_tokens: 512
+
+tokenizer: "whitespace"
+
+balance_strategy: "none"
+balance_preset: null
+
+families:
+  - "check"
+  - "sklearn"
+
+models_spacy: []
+models_sklearn:
+  - "tfidf_svm_quick"
+models_hf: []
+
+hardware_preset: "small"
+
+debug_mode: false

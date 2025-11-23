@@ -1,0 +1,36 @@
+# configs/profiles/check_only.yml
+
+profile: "check_only"
+description: "Profil ne lançant que les checks / pré-analyses"
+
+corpus_id: "web1"
+view: "ideology_global"
+modality: "web"
+
+ideology:
+  mode: actors
+  actors_yaml: configs/label_maps/ideology_actors.yml
+  view: binary
+  unknown_actors:
+    policy: drop
+
+train_prop: 0.8
+min_chars: 200
+max_tokens: 512
+
+tokenizer: "whitespace"
+
+balance_strategy: "none"
+balance_preset: null
+
+families:
+  - "check"
+
+models_spacy: []
+models_sklearn: []
+models_hf: []
+models_check: []   # on complètera plus tard si tu définis des "modèles" de check
+
+hardware_preset: "small"
+
+debug_mode: false

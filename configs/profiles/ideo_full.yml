@@ -1,0 +1,37 @@
+# configs/profiles/ideo_full.yml
+
+profile: "ideo_full"
+description: "Classification idéologie globale, pipeline complet (spaCy + sklearn + HF)"
+
+corpus_id: "web1"
+view: "ideology_global"
+modality: "web"
+
+ideology:
+  mode: actors
+  actors_yaml: configs/label_maps/ideology_actors.yml
+  view: five_way
+  unknown_actors:
+    policy: drop
+
+train_prop: 0.8
+min_chars: 200
+max_tokens: 512
+tokenizer: "whitespace"
+balance_strategy: "alpha_total"
+balance_preset: "default_alpha_total"
+
+families:
+  - "check"
+  - "spacy"
+  - "sklearn"
+  - "hf"
+
+models_spacy:
+  - "spacy_cnn_quick"
+models_sklearn:
+  - "tfidf_svm_quick"
+models_hf:
+  - "camembert_base"
+
+hardware_preset: "lab"

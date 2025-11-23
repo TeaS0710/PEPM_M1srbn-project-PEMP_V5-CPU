@@ -1,0 +1,15 @@
+# configs/common/corpora.yml
+
+web1:
+  corpus_id: "web1"
+  corpus_path: "data/raw/web1/corpus.xml"
+  encoding: "utf-8"
+  default_modality: "web"
+  notes: "Corpus web initial (ex V2)"
+
+web2:
+  corpus_id: "web2"
+  corpus_path: "data/raw/web2/corpus.xml"
+  encoding: "utf-8"
+  default_modality: "web"
+  notes: "Deuxième corpus web"

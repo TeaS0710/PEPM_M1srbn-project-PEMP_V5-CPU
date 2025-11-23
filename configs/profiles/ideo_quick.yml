@@ -1,0 +1,59 @@
+# configs/profiles/ideo_quick.yml
+
+profile: ideo_quick
+description: "Vue idéologie globale – run complet mais raisonnable (tous les modèles spaCy+sklearn)"
+pipeline_version: "4.1"
+
+corpus_id: web1
+view: ideology_global
+
+# Familles activées
+families:
+  - check
+  - spacy
+  - sklearn
+
+# Labelisation (vue acteurs → global)
+label_field: ideology_label
+label_map: null  # dérivé via bloc ideology / actors
+
+ideology:
+  mode: actors
+  actors_yaml: configs/label_maps/ideology_actors.yml
+  unknown_actors:
+    policy: drop
+
+# Split & filtrage
+train_prop: 0.7
+min_chars: 200
+max_tokens: 512
+modality: null
+
+# Équilibrage
+balance_strategy: alpha_total
+balance_preset: small_alpha
+
+# Hardware
+hardware_preset: small
+debug_mode: false
+
+# Modèles spaCy (tous les modèles définis côté spaCy)
+models_spacy:
+  - spacy_cnn_quick
+  - spacy_bow_quick
+
+# Modèles sklearn – on active tout ce qui est défini dans models.yml
+models_sklearn:
+  - tfidf_svm_quick
+  - tfidf_smo_linear
+  - tfidf_smo_rbf
+  - tfidf_perceptron
+  - tfidf_randomtree
+  - tfidf_randomforest
+
+# Pas de HF dans le quick (réservé à ideo_full)
+models_hf: []
+
+# Pseudo-modèle de check
+models_check:
+  - check_default
