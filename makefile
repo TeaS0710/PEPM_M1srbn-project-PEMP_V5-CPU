@@ -1,4 +1,4 @@
-PYTHON                  ?=python3
+PYTHON                  ?= python3
 ifneq ("$(wildcard .venv/bin/python)","")
 PYTHON                  :=.venv/bin/python
 endif
@@ -69,16 +69,16 @@ OVR_FLAGS		=$(foreach o,$(ALL_OVERRIDES),--override $(o))
 FAMILY_FLAG		=$(if $(FAMILY),--only-family $(FAMILY),)
 
 .PHONY: help \
-        list_profiles \
-        run \
-        check \
-        prepare prepare_dry \
-        train evaluate pipeline \
-        ideology_skeleton \
-        init_dirs venv install setup \
-        check_scripts diagnostics \
-        sysinfo \
-        clean
+list_profiles \
+run \
+check \
+prepare prepare_dry \
+train evaluate pipeline \
+ideology_skeleton \
+init_dirs venv install setup \
+check_scripts diagnostics \
+sysinfo \
+clean
 
 help:
 	@echo "Pipeline V4 (config-first)"
@@ -97,18 +97,18 @@ help:
 	@echo "  TRAIN_PROP       -> train_prop"
 	@echo "  BALANCE_STRATEGY -> balance_strategy"
 	@echo "  BALANCE_PRESET   -> balance_preset (preset dans balance.yml)"
-        @echo "  HARDWARE_PRESET  -> hardware_preset (preset dans hardware.yml)"
-        @echo "  FAMILIES         -> families (ex: spacy,sklearn)"
-        @echo "  SEED             -> seed"
-        @echo "  MAX_DOCS_SKLEARN -> max_train_docs_sklearn"
-        @echo "  MAX_DOCS_SPACY   -> max_train_docs_spacy"
-        @echo "  MAX_DOCS_HF      -> max_train_docs_hf"
-        @echo ""
-        @echo "Overrides bruts :"
-        @echo "  OVERRIDES        -> liste libre de \"cle=val\" (ex: OVERRIDES=\"debug_mode=true\")"
-        @echo "  Exemples idéologie : OVERRIDES=\"ideology.view=five_way\""
-        @echo "                     OVERRIDES=\"ideology.unknown_actors.policy=keep\""
-        @echo ""
+	@echo "  HARDWARE_PRESET  -> hardware_preset (preset dans hardware.yml)"
+	@echo "  FAMILIES         -> families (ex: spacy,sklearn)"
+	@echo "  SEED             -> seed"
+	@echo "  MAX_DOCS_SKLEARN -> max_train_docs_sklearn"
+	@echo "  MAX_DOCS_SPACY   -> max_train_docs_spacy"
+	@echo "  MAX_DOCS_HF      -> max_train_docs_hf"
+	@echo ""
+	@echo "Overrides bruts :"
+	@echo "  OVERRIDES        -> liste libre de \"cle=val\" (ex: OVERRIDES=\"debug_mode=true\")"
+	@echo "  Exemples idéologie : OVERRIDES=\"ideology.view=five_way\""
+	@echo "                     OVERRIDES=\"ideology.unknown_actors.policy=keep\""
+	@echo ""
 	@echo "Mise en place :"
 	@echo "  make setup                      # venv (si besoin) + install deps + arbo + check global"
 	@echo ""
@@ -122,11 +122,11 @@ help:
 
 venv:
 	@if [ ! -x ".venv/bin/python" ]; then \
-	  echo "[venv] Création de l'environnement virtuel .venv..."; \
-	  python3 -m venv .venv; \
-	  .venv/bin/python -m pip install -U pip; \
+	echo "[venv] Création de l'environnement virtuel .venv..."; \
+	python3 -m venv .venv; \
+	.venv/bin/python -m pip install -U pip; \
 	else \
-	  echo "[venv] Environnement .venv déjà présent."; \
+	echo "[venv] Environnement .venv déjà présent."; \
 	fi
 
 install: venv
@@ -163,9 +163,9 @@ diagnostics:
 check: diagnostics check_scripts
 	@echo "[check] Vérification du profil $(PROFILE)..."
 	$(PYTHON) scripts/pre/pre_check_config.py \
-		--profile $(PROFILE) \
-		$(OVR_FLAGS) \
-		--verbose
+	--profile $(PROFILE) \
+	$(OVR_FLAGS) \
+	--verbose
 	@echo "[check] OK : environnement + scripts + profil $(PROFILE) validés."
 
 
@@ -177,35 +177,35 @@ list_profiles:
 prepare:
 	@echo "[prepare] Profil: $(PROFILE)"
 	$(PYTHON) scripts/core/core_prepare.py \
-		--profile $(PROFILE) \
-		$(OVR_FLAGS) \
-		--verbose
+	--profile $(PROFILE) \
+	$(OVR_FLAGS) \
+	--verbose
 
 prepare_dry:
 	@echo "[prepare_dry] Profil: $(PROFILE) (dry-run)"
 	$(PYTHON) scripts/core/core_prepare.py \
-		--profile $(PROFILE) \
-		$(OVR_FLAGS) \
-		--dry-run \
-		--verbose
+	--profile $(PROFILE) \
+	$(OVR_FLAGS) \
+	--dry-run \
+	--verbose
 
 
 train:
 	@echo "[train] Profil: $(PROFILE)  Famille: $(FAMILY)"
 	$(PYTHON) scripts/core/core_train.py \
-		--profile $(PROFILE) \
-		$(OVR_FLAGS) \
-		$(FAMILY_FLAG) \
-		--verbose
+	--profile $(PROFILE) \
+	$(OVR_FLAGS) \
+	$(FAMILY_FLAG) \
+	--verbose
 
 
 evaluate:
 	@echo "[evaluate] Profil: $(PROFILE)  Famille: $(FAMILY)"
 	$(PYTHON) scripts/core/core_evaluate.py \
-		--profile $(PROFILE) \
-		$(OVR_FLAGS) \
-		$(FAMILY_FLAG) \
-		--verbose
+	--profile $(PROFILE) \
+	$(OVR_FLAGS) \
+	$(FAMILY_FLAG) \
+	--verbose
 
 
 pipeline: check prepare train evaluate
@@ -215,66 +215,66 @@ STAGE ?= pipeline
 run:
 	@echo "[run] STAGE=$(STAGE) PROFILE=$(PROFILE) FAMILY=$(FAMILY)"
 	@if [ "$(STAGE)" = "check" ]; then \
-		$(MAKE) check PROFILE=$(PROFILE) OVERRIDES="$(OVERRIDES)" \
-		CORPUS_ID="$(CORPUS_ID)" TRAIN_PROP="$(TRAIN_PROP)" \
-                BALANCE_STRATEGY="$(BALANCE_STRATEGY)" BALANCE_PRESET="$(BALANCE_PRESET)" \
-                HARDWARE_PRESET="$(HARDWARE_PRESET)" FAMILIES="$(FAMILIES)" \
-                SEED="$(SEED)" MAX_DOCS_SKLEARN="$(MAX_DOCS_SKLEARN)" \
-                MAX_DOCS_SPACY="$(MAX_DOCS_SPACY)" MAX_DOCS_HF="$(MAX_DOCS_HF)"; \
-        elif [ "$(STAGE)" = "prepare" ]; then \
-                $(MAKE) prepare PROFILE=$(PROFILE) FAMILY="$(FAMILY)" \
-                OVERRIDES="$(OVERRIDES)" CORPUS_ID="$(CORPUS_ID)" TRAIN_PROP="$(TRAIN_PROP)" \
-                BALANCE_STRATEGY="$(BALANCE_STRATEGY)" BALANCE_PRESET="$(BALANCE_PRESET)" \
-                HARDWARE_PRESET="$(HARDWARE_PRESET)" FAMILIES="$(FAMILIES)" \
-                SEED="$(SEED)" MAX_DOCS_SKLEARN="$(MAX_DOCS_SKLEARN)" \
-                MAX_DOCS_SPACY="$(MAX_DOCS_SPACY)" MAX_DOCS_HF="$(MAX_DOCS_HF)"; \
-        elif [ "$(STAGE)" = "prepare_dry" ]; then \
-                $(MAKE) prepare_dry PROFILE=$(PROFILE) FAMILY="$(FAMILY)" \
-                OVERRIDES="$(OVERRIDES)" CORPUS_ID="$(CORPUS_ID)" TRAIN_PROP="$(TRAIN_PROP)" \
-                BALANCE_STRATEGY="$(BALANCE_STRATEGY)" BALANCE_PRESET="$(BALANCE_PRESET)" \
-                HARDWARE_PRESET="$(HARDWARE_PRESET)" FAMILIES="$(FAMILIES)" \
-                SEED="$(SEED)" MAX_DOCS_SKLEARN="$(MAX_DOCS_SKLEARN)" \
-                MAX_DOCS_SPACY="$(MAX_DOCS_SPACY)" MAX_DOCS_HF="$(MAX_DOCS_HF)"; \
-        elif [ "$(STAGE)" = "train" ]; then \
-                $(MAKE) train PROFILE=$(PROFILE) FAMILY="$(FAMILY)" \
-                OVERRIDES="$(OVERRIDES)" CORPUS_ID="$(CORPUS_ID)" TRAIN_PROP="$(TRAIN_PROP)" \
-                BALANCE_STRATEGY="$(BALANCE_STRATEGY)" BALANCE_PRESET="$(BALANCE_PRESET)" \
-                HARDWARE_PRESET="$(HARDWARE_PRESET)" FAMILIES="$(FAMILIES)" \
-                SEED="$(SEED)" MAX_DOCS_SKLEARN="$(MAX_DOCS_SKLEARN)" \
-                MAX_DOCS_SPACY="$(MAX_DOCS_SPACY)" MAX_DOCS_HF="$(MAX_DOCS_HF)"; \
-        elif [ "$(STAGE)" = "evaluate" ]; then \
-                $(MAKE) evaluate PROFILE=$(PROFILE) FAMILY="$(FAMILY)" \
-                OVERRIDES="$(OVERRIDES)" CORPUS_ID="$(CORPUS_ID)" TRAIN_PROP="$(TRAIN_PROP)" \
-                BALANCE_STRATEGY="$(BALANCE_STRATEGY)" BALANCE_PRESET="$(BALANCE_PRESET)" \
-                HARDWARE_PRESET="$(HARDWARE_PRESET)" FAMILIES="$(FAMILIES)" \
-                SEED="$(SEED)" MAX_DOCS_SKLEARN="$(MAX_DOCS_SKLEARN)" \
-                MAX_DOCS_SPACY="$(MAX_DOCS_SPACY)" MAX_DOCS_HF="$(MAX_DOCS_HF)"; \
-        elif [ "$(STAGE)" = "pipeline" ] || [ -z "$(STAGE)" ]; then \
-                $(MAKE) pipeline PROFILE=$(PROFILE) FAMILY="$(FAMILY)" \
-                OVERRIDES="$(OVERRIDES)" CORPUS_ID="$(CORPUS_ID)" TRAIN_PROP="$(TRAIN_PROP)" \
-                BALANCE_STRATEGY="$(BALANCE_STRATEGY)" BALANCE_PRESET="$(BALANCE_PRESET)" \
-                HARDWARE_PRESET="$(HARDWARE_PRESET)" FAMILIES="$(FAMILIES)" \
-                SEED="$(SEED)" MAX_DOCS_SKLEARN="$(MAX_DOCS_SKLEARN)" \
-                MAX_DOCS_SPACY="$(MAX_DOCS_SPACY)" MAX_DOCS_HF="$(MAX_DOCS_HF)"; \
-        else \
-		echo "[run] Erreur : STAGE=$(STAGE) inconnu. Utiliser check|prepare|prepare_dry|train|evaluate|pipeline."; \
-		exit 1; \
+	$(MAKE) check PROFILE=$(PROFILE) OVERRIDES="$(OVERRIDES)" \
+	CORPUS_ID="$(CORPUS_ID)" TRAIN_PROP="$(TRAIN_PROP)" \
+	BALANCE_STRATEGY="$(BALANCE_STRATEGY)" BALANCE_PRESET="$(BALANCE_PRESET)" \
+	HARDWARE_PRESET="$(HARDWARE_PRESET)" FAMILIES="$(FAMILIES)" \
+	SEED="$(SEED)" MAX_DOCS_SKLEARN="$(MAX_DOCS_SKLEARN)" \
+	MAX_DOCS_SPACY="$(MAX_DOCS_SPACY)" MAX_DOCS_HF="$(MAX_DOCS_HF)"; \
+	elif [ "$(STAGE)" = "prepare" ]; then \
+	$(MAKE) prepare PROFILE=$(PROFILE) FAMILY="$(FAMILY)" \
+	OVERRIDES="$(OVERRIDES)" CORPUS_ID="$(CORPUS_ID)" TRAIN_PROP="$(TRAIN_PROP)" \
+	BALANCE_STRATEGY="$(BALANCE_STRATEGY)" BALANCE_PRESET="$(BALANCE_PRESET)" \
+	HARDWARE_PRESET="$(HARDWARE_PRESET)" FAMILIES="$(FAMILIES)" \
+	SEED="$(SEED)" MAX_DOCS_SKLEARN="$(MAX_DOCS_SKLEARN)" \
+	MAX_DOCS_SPACY="$(MAX_DOCS_SPACY)" MAX_DOCS_HF="$(MAX_DOCS_HF)"; \
+	elif [ "$(STAGE)" = "prepare_dry" ]; then \
+	$(MAKE) prepare_dry PROFILE=$(PROFILE) FAMILY="$(FAMILY)" \
+	OVERRIDES="$(OVERRIDES)" CORPUS_ID="$(CORPUS_ID)" TRAIN_PROP="$(TRAIN_PROP)" \
+	BALANCE_STRATEGY="$(BALANCE_STRATEGY)" BALANCE_PRESET="$(BALANCE_PRESET)" \
+	HARDWARE_PRESET="$(HARDWARE_PRESET)" FAMILIES="$(FAMILIES)" \
+	SEED="$(SEED)" MAX_DOCS_SKLEARN="$(MAX_DOCS_SKLEARN)" \
+	MAX_DOCS_SPACY="$(MAX_DOCS_SPACY)" MAX_DOCS_HF="$(MAX_DOCS_HF)"; \
+	elif [ "$(STAGE)" = "train" ]; then \
+	$(MAKE) train PROFILE=$(PROFILE) FAMILY="$(FAMILY)" \
+	OVERRIDES="$(OVERRIDES)" CORPUS_ID="$(CORPUS_ID)" TRAIN_PROP="$(TRAIN_PROP)" \
+	BALANCE_STRATEGY="$(BALANCE_STRATEGY)" BALANCE_PRESET="$(BALANCE_PRESET)" \
+	HARDWARE_PRESET="$(HARDWARE_PRESET)" FAMILIES="$(FAMILIES)" \
+	SEED="$(SEED)" MAX_DOCS_SKLEARN="$(MAX_DOCS_SKLEARN)" \
+	MAX_DOCS_SPACY="$(MAX_DOCS_SPACY)" MAX_DOCS_HF="$(MAX_DOCS_HF)"; \
+	elif [ "$(STAGE)" = "evaluate" ]; then \
+	$(MAKE) evaluate PROFILE=$(PROFILE) FAMILY="$(FAMILY)" \
+	OVERRIDES="$(OVERRIDES)" CORPUS_ID="$(CORPUS_ID)" TRAIN_PROP="$(TRAIN_PROP)" \
+	BALANCE_STRATEGY="$(BALANCE_STRATEGY)" BALANCE_PRESET="$(BALANCE_PRESET)" \
+	HARDWARE_PRESET="$(HARDWARE_PRESET)" FAMILIES="$(FAMILIES)" \
+	SEED="$(SEED)" MAX_DOCS_SKLEARN="$(MAX_DOCS_SKLEARN)" \
+	MAX_DOCS_SPACY="$(MAX_DOCS_SPACY)" MAX_DOCS_HF="$(MAX_DOCS_HF)"; \
+	elif [ "$(STAGE)" = "pipeline" ] || [ -z "$(STAGE)" ]; then \
+	$(MAKE) pipeline PROFILE=$(PROFILE) FAMILY="$(FAMILY)" \
+	OVERRIDES="$(OVERRIDES)" CORPUS_ID="$(CORPUS_ID)" TRAIN_PROP="$(TRAIN_PROP)" \
+	BALANCE_STRATEGY="$(BALANCE_STRATEGY)" BALANCE_PRESET="$(BALANCE_PRESET)" \
+	HARDWARE_PRESET="$(HARDWARE_PRESET)" FAMILIES="$(FAMILIES)" \
+	SEED="$(SEED)" MAX_DOCS_SKLEARN="$(MAX_DOCS_SKLEARN)" \
+	MAX_DOCS_SPACY="$(MAX_DOCS_SPACY)" MAX_DOCS_HF="$(MAX_DOCS_HF)"; \
+	else \
+echo "[run] Erreur : STAGE=$(STAGE) inconnu. Utiliser check|prepare|prepare_dry|train|evaluate|pipeline."; \
+	exit 1; \
 	fi
 
 ideology_skeleton:
 	$(PYTHON) scripts/pre/make_ideology_skeleton.py \
-		--corpus $(CORPUS_XML) \
-		--out-yaml $(IDEO_MAP_OUT) \
-		--out-report $(IDEO_REPORT_OUT) \
-		--min-chars $(MIN_CHARS_IDEO) \
-		--top-variants $(TOP_VARIANTS_IDEO)
+	--corpus $(CORPUS_XML) \
+	--out-yaml $(IDEO_MAP_OUT) \
+	--out-report $(IDEO_REPORT_OUT) \
+	--min-chars $(MIN_CHARS_IDEO) \
+	--top-variants $(TOP_VARIANTS_IDEO)
 	@echo "YAML squelette ideologie écrit dans $(IDEO_MAP_OUT)"
 	@echo "Rapport d'acteurs écrit dans $(IDEO_REPORT_OUT)"
 
 clean:
 	@echo "[clean] Suppression des fichiers intermédiaires, modèles et rapports..."
 	rm -rf data/interim/* \
-	       data/processed/* \
-	       models/* \
-	       reports/*
+	data/processed/* \
+	models/* \
+	reports/*
 	@echo "[clean] OK"

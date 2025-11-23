@@ -1,141 +1,31 @@
 actors:
-  crawl_actionfrancaise_20251003_000000:
+  actionfrancaise_net:
     crawls:
     - crawl_actionfrancaise_20251003_000000
-    global_five: null
+    doc_count: 2
+    domains:
+    - actionfrancaise_net
+    global_five: far_right
     intra_left: null
-    intra_right: null
-    side_binary: null
-  crawl_cce_full_20250927_234505:
+    intra_right: far_right
+    side_binary: right
+  bernardlugan_blogspot_com:
     crawls:
-    - crawl_cce_full_20250927_234505
-    global_five: null
-    intra_left: null
+    - crawl_actionfrancaise_20251003_000000
+    doc_count: 1
+    domains:
+    - bernardlugan_blogspot_com
+    global_five: left
+    intra_left: left
     intra_right: null
-    side_binary: null
-  crawl_contretemps_20250928_003525:
+    side_binary: left
+  politiquemagazine_fr:
     crawls:
-    - crawl_contretemps_20250928_003525
-    global_five: null
-    intra_left: null
+    - crawl_actionfrancaise_20251003_000000
+    doc_count: 2
+    domains:
+    - politiquemagazine_fr
+    global_five: left
+    intra_left: center_left
     intra_right: null
-    side_binary: null
-  crawl_eco_full_20250928_000354:
-    crawls:
-    - crawl_eco_full_20250928_000354
-    global_five: null
-    intra_left: null
-    intra_right: null
-    side_binary: null
-  crawl_er_20251003_231234:
-    crawls:
-    - crawl_er_20251003_231234
-    global_five: null
-    intra_left: null
-    intra_right: null
-    side_binary: null
-  crawl_fdesouche_20251003_231247:
-    crawls:
-    - crawl_fdesouche_20251003_231247
-    global_five: null
-    intra_left: null
-    intra_right: null
-    side_binary: null
-  crawl_hut_fr_20251003_231255:
-    crawls:
-    - crawl_hut_fr_20251003_231255
-    global_five: null
-    intra_left: null
-    intra_right: null
-    side_binary: null
-  crawl_initiative_communiste_20250928_003234:
-    crawls:
-    - crawl_initiative_communiste_20250928_003234
-    global_five: null
-    intra_left: null
-    intra_right: null
-    side_binary: null
-  crawl_jean_jaures_20250928_003513:
-    crawls:
-    - crawl_jean_jaures_20250928_003513
-    global_five: null
-    intra_left: null
-    intra_right: null
-    side_binary: null
-  crawl_lfi_full_20250928_000133:
-    crawls:
-    - crawl_lfi_full_20250928_000133
-    global_five: null
-    intra_left: null
-    intra_right: null
-    side_binary: null
-  crawl_lo_full_20250928_001323:
-    crawls:
-    - crawl_lo_full_20250928_001323
-    global_five: null
-    intra_left: null
-    intra_right: null
-    side_binary: null
-  crawl_lr_full_20250928_001404:
-    crawls:
-    - crawl_lr_full_20250928_001404
-    global_five: null
-    intra_left: null
-    intra_right: null
-    side_binary: null
-  crawl_lundi_am_20250928_003202:
-    crawls:
-    - crawl_lundi_am_20250928_003202
-    global_five: null
-    intra_left: null
-    intra_right: null
-    side_binary: null
-  crawl_npa_full_20250928_001251:
-    crawls:
-    - crawl_npa_full_20250928_001251
-    global_five: null
-    intra_left: null
-    intra_right: null
-    side_binary: null
-  crawl_polemia_20250928_003004:
-    crawls:
-    - crawl_polemia_20250928_003004
-    global_five: null
-    intra_left: null
-    intra_right: null
-    side_binary: null
-  crawl_ps_full_20250928_000302:
-    crawls:
-    - crawl_ps_full_20250928_000302
-    global_five: null
-    intra_left: null
-    intra_right: null
-    side_binary: null
-  crawl_revperm_20250928_003219:
-    crawls:
-    - crawl_revperm_20250928_003219
-    global_five: null
-    intra_left: null
-    intra_right: null
-    side_binary: null
-  crawl_rn_full_20250927_234616:
-    crawls:
-    - crawl_rn_full_20250927_234616
-    global_five: null
-    intra_left: null
-    intra_right: null
-    side_binary: null
-  crawl_terranova_20250928_003520:
-    crawls:
-    - crawl_terranova_20250928_003520
-    global_five: null
-    intra_left: null
-    intra_right: null
-    side_binary: null
-  crawl_ucl_20250928_003510:
-    crawls:
-    - crawl_ucl_20250928_003510
-    global_five: null
-    intra_left: null
-    intra_right: null
-    side_binary: null
+    side_binary: left

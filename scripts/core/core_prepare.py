@@ -34,11 +34,11 @@ _LABEL_MAP_CACHE: Dict[str, Dict[str, Any]] = {}
 
 
 @lru_cache(maxsize=1)
-def load_ideology_actors(path: str) -> Tuple[Dict[str, Any], Dict[str, str]]:
-    """Charger le mapping acteurs <- crawls depuis un YAML unique."""
+def load_ideology_actors(path: str) -> Tuple[Dict[str, Any], Dict[str, str], Dict[str, str]]:
+    """Charger le mapping acteurs depuis un YAML unique (crawls + domaines)."""
 
     if not path:
-        return {}, {}
+        return {}, {}, {}
     with open(path, "r", encoding="utf-8") as f:
         data = yaml.safe_load(f) or {}
 
@@ -47,10 +47,17 @@ def load_ideology_actors(path: str) -> Tuple[Dict[str, Any], Dict[str, str]]:
         actors = {}
 
     crawl_to_actor: Dict[str, str] = {}
+    domain_to_actor: Dict[str, str] = {}
     for actor_id, info in actors.items():
         for crawl_id in (info or {}).get("crawls", []) or []:
-            crawl_to_actor[normalize_label_value(str(crawl_id))] = actor_id
-    return actors, crawl_to_actor
+            crawl_norm = normalize_label_value(str(crawl_id))
+            if crawl_norm:
+                crawl_to_actor[crawl_norm] = actor_id
+        for domain_id in (info or {}).get("domains", []) or []:
+            domain_norm = normalize_label_value(str(domain_id))
+            if domain_norm:
+                domain_to_actor[domain_norm] = actor_id
+    return actors, crawl_to_actor, domain_to_actor
 
 
 # ----------------- CLI -----------------
@@ -296,21 +303,6 @@ def apply_label_mapping(
     return None
 
 
-def first_non_empty(meta: Dict[str, Any], fields: Iterable[str]) -> Optional[str]:
-    for f in fields:
-        if f is None:
-            continue
-        val = meta.get(f)
-        if val is None:
-            continue
-        if isinstance(val, str):
-            if val.strip():
-                return val
-        else:
-            return str(val)
-    return None
-
-
 def stratified_split(
     docs: List[Dict[str, Any]], train_prop: float, seed: int
 ) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
@@ -340,20 +332,23 @@ def resolve_ideology_label(
 ) -> Tuple[Optional[str], Optional[str], str]:
     """Résoudre le label idéologique final selon la config structurée."""
 
-    mode = str((ideology_cfg or {}).get("mode", "actors")).strip().lower()
-    if mode == "actors":
-        return resolve_ideology_label_actors(row_meta, ideology_cfg)
-    return resolve_ideology_label_legacy(row_meta, ideology_cfg)
+    return resolve_ideology_label_actors(row_meta, ideology_cfg)
 
 
 def resolve_ideology_label_actors(
     row_meta: Dict[str, Any], ideology_cfg: Dict[str, Any]
 ) -> Tuple[Optional[str], Optional[str], str]:
     actors_yaml = ideology_cfg.get("actors_yaml")
-    actors_table, crawl_to_actor = load_ideology_actors(actors_yaml)
+    actors_table, crawl_to_actor, domain_to_actor = load_ideology_actors(actors_yaml)
 
     crawl_norm = normalize_label_value(str(row_meta.get("crawl") or ""))
-    actor_id = crawl_to_actor.get(crawl_norm)
+    domain_norm = normalize_label_value(str(row_meta.get("domain") or ""))
+    actor_id = None
+
+    if domain_norm:
+        actor_id = domain_to_actor.get(domain_norm)
+    if not actor_id:
+        actor_id = crawl_to_actor.get(crawl_norm)
 
     if not actor_id:
         policy = str(ideology_cfg.get("unknown_actors", {}).get("policy", "drop")).strip().lower()
@@ -384,51 +379,6 @@ def resolve_ideology_label_actors(
     if not label:
         return actor_id, None, "label_missing_for_view"
     return actor_id, str(label), "ok"
-
-
-def resolve_ideology_label_legacy(
-    row_meta: Dict[str, Any], ideology_cfg: Dict[str, Any]
-) -> Tuple[Optional[str], Optional[str], str]:
-    """Compatibilité historique basée sur les anciens label_maps (déprécié)."""
-
-    source = str(ideology_cfg.get("label_source", "manual")).strip().lower()
-    granularity = str(ideology_cfg.get("granularity", "binary")).strip().lower()
-
-    manual_fields = ideology_cfg.get("label_fields_manual", ["ideology"])
-    derived_fields = ideology_cfg.get("label_fields_derived", ["domain", "crawl"])
-    fields = manual_fields if source == "manual" else derived_fields
-
-    raw_val = first_non_empty(row_meta, fields)
-    if raw_val is None:
-        return None, None, "no_label_raw"
-
-    # label_map prioritaire selon granularité (intra_side peut spécifier son propre map)
-    label_map_path = ideology_cfg.get("label_map")
-    if granularity == "intra_side":
-        label_map_path = ideology_cfg.get("intra_side", {}).get("label_map", label_map_path)
-
-    lm_data = _load_label_map_cached(label_map_path)
-    label = apply_label_mapping(
-        raw_val,
-        lm_data.get("mapping", {}),
-        ideology_cfg.get("unknown_labels", lm_data.get("unknown_labels", {})),
-    )
-
-    if label is None:
-        return raw_val, None, "label_not_mapped"
-
-    if granularity == "intra_side":
-        side_cfg = ideology_cfg.get("intra_side", {}) or {}
-        side = str(side_cfg.get("side", "")).strip().lower()
-        if side:
-            allowed_left = {"left", "gauche", "far_left", "exgauche"}
-            allowed_right = {"right", "droite", "far_right", "exdroite"}
-            if side == "left" and label not in allowed_left:
-                return raw_val, None, "actor_not_left"
-            if side == "right" and label not in allowed_right:
-                return raw_val, None, "actor_not_right"
-
-    return raw_val, label, "ok"
 
 
 def extract_doc_id(elem: ET.Element, fallback_idx: int) -> str:
@@ -552,10 +502,7 @@ def build_view(params: Dict[str, Any], dry_run: bool = False) -> Dict[str, Any]:
 
     meta_fields: set = set()
     if ideology_cfg:
-        meta_fields.update(ideology_cfg.get("label_fields_manual", []))
-        meta_fields.update(ideology_cfg.get("label_fields_derived", []))
-        meta_fields.update(ideology_cfg.get("intra_side", {}).get("label_fields", []) or [])
-        meta_fields.add("crawl")
+        meta_fields.update({"crawl", "domain"})
     if actors_cfg:
         meta_fields.add("actor")
 

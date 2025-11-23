@@ -21,7 +21,7 @@ import unicodedata
 from pathlib import Path
 import xml.etree.ElementTree as ET
 from collections import Counter, defaultdict
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import yaml
 
@@ -35,18 +35,27 @@ def norm_key(s: str) -> str:
     return s.strip("_")
 
 
-def get_label_from_tei(tei_el: ET.Element) -> str:
-    """<term type='crawl'>, sinon folder/folder_path, sinon xml:id."""
-    # 1) crawl
+def extract_actor_tags(tei_el: ET.Element) -> Tuple[Optional[str], Optional[str], Optional[str]]:
+    """Récupère (domain, crawl, fallback) depuis le TEI."""
+
+    domain = None
+    crawl = None
+    folder = None
+    folder_path = None
+
     for term in tei_el.findall(".//{*}keywords/{*}term"):
-        if (term.attrib.get("type", "").lower() == "crawl") and (term.text or "").strip():
-            return term.text.strip()
-    # 2) folder / folder_path
-    for term in tei_el.findall(".//{*}keywords/{*}term"):
-        if term.attrib.get("type", "").lower() in {"folder", "folder_path"} and (term.text or "").strip():
-            return term.text.strip()
-    # 3) xml:id
-    return tei_el.attrib.get("{http://www.w3.org/XML/1998/namespace}id", "").strip()
+        ttype = term.attrib.get("type", "").lower()
+        if ttype == "domain" and (term.text or "").strip():
+            domain = term.text.strip()
+        elif ttype == "crawl" and (term.text or "").strip():
+            crawl = term.text.strip()
+        elif ttype == "folder" and (term.text or "").strip():
+            folder = term.text.strip()
+        elif ttype == "folder_path" and (term.text or "").strip():
+            folder_path = term.text.strip()
+
+    fallback = folder or folder_path or tei_el.attrib.get("{http://www.w3.org/XML/1998/namespace}id", "").strip()
+    return domain, crawl, fallback
 
 
 def text_len_chars(tei_el: ET.Element) -> int:
@@ -91,6 +100,7 @@ def load_existing_actors(path: Path) -> Dict[str, Dict[str, Any]]:
     for actor_id, info in actors_raw.items():
         base_info = {
             "crawls": [],
+            "domains": [],
             "side_binary": None,
             "global_five": None,
             "intra_left": None,
@@ -100,6 +110,8 @@ def load_existing_actors(path: Path) -> Dict[str, Dict[str, Any]]:
             base_info.update(info)
         crawls = base_info.get("crawls") or []
         base_info["crawls"] = sorted({norm_key(c) for c in crawls if c})
+        domains = base_info.get("domains") or []
+        base_info["domains"] = sorted({norm_key(d) for d in domains if d})
         actors[actor_id] = base_info
     return actors
 
@@ -115,11 +127,14 @@ def merge_actors(existing: Dict[str, Dict[str, Any]], found: Dict[str, Dict[str,
             new_actors += 1
         merged_info = {
             "crawls": sorted(set((base.get("crawls") or []) + list(finfo.get("crawls", [])))),
+            "domains": sorted(set((base.get("domains") or []) + list(finfo.get("domains", [])))),
             "side_binary": base.get("side_binary"),
             "global_five": base.get("global_five"),
             "intra_left": base.get("intra_left"),
             "intra_right": base.get("intra_right"),
         }
+        if "doc_count" in finfo:
+            merged_info["doc_count"] = finfo.get("doc_count")
         merged[actor_id] = merged_info
 
     for actor_id, info in existing.items():
@@ -127,6 +142,7 @@ def merge_actors(existing: Dict[str, Dict[str, Any]], found: Dict[str, Dict[str,
             continue
         merged_info = {
             "crawls": info.get("crawls", []),
+            "domains": info.get("domains", []),
             "side_binary": info.get("side_binary"),
             "global_five": info.get("global_five"),
             "intra_left": info.get("intra_left"),
@@ -152,6 +168,8 @@ def main():
 
     totals: Dict[str, int] = Counter()
     variants: Dict[str, Counter] = defaultdict(Counter)
+    domains: Dict[str, set] = defaultdict(set)
+    crawls: Dict[str, set] = defaultdict(set)
 
     ctx = ET.iterparse(args.corpus, events=("end",))
     for event, elem in ctx:
@@ -160,7 +178,8 @@ def main():
                 elem.clear()
                 continue
 
-            raw = get_label_from_tei(elem) or ""
+            domain_raw, crawl_raw, fallback_raw = extract_actor_tags(elem)
+            raw = domain_raw or crawl_raw or fallback_raw or ""
             if not raw:
                 elem.clear()
                 continue
@@ -169,6 +188,11 @@ def main():
             if not key:
                 elem.clear()
                 continue
+
+            if domain_raw:
+                domains[key].add(norm_key(domain_raw))
+            if crawl_raw:
+                crawls[key].add(norm_key(crawl_raw))
 
             totals[key] += 1
             variants[key][raw] += 1
@@ -180,7 +204,11 @@ def main():
 
     found_actors: Dict[str, Dict[str, Any]] = {}
     for key, count in totals.items():
-        found_actors[key] = {"crawls": {key}, "doc_count": count}
+        found_actors[key] = {
+            "crawls": crawls.get(key, set()),
+            "domains": domains.get(key, set()),
+            "doc_count": count,
+        }
 
     existing = load_existing_actors(args.out_yaml)
     merged, new_actors, stale_actors = merge_actors(existing, found_actors)
@@ -192,14 +220,15 @@ def main():
     args.out_report.parent.mkdir(parents=True, exist_ok=True)
     ordered = sorted(found_actors.items(), key=lambda kv: (-kv[1].get("doc_count", 0), kv[0]))
     with args.out_report.open("w", encoding="utf-8") as f:
-        f.write("actor_id\tcrawl_ids\tdoc_count\tvariant_examples\n")
+        f.write("actor_id\tcrawl_ids\tdomain_ids\tdoc_count\tvariant_examples\n")
         for actor_id, info in ordered:
-            crawls = sorted(info.get("crawls", []))
+            crawls_list = sorted(info.get("crawls", []))
+            domains_list = sorted(info.get("domains", []))
             sample = "; ".join(
                 f"{val}×{cnt}" for val, cnt in variants.get(actor_id, {}).most_common(args.top_variants)
             )
             f.write(
-                f"{actor_id}\t{';'.join(crawls)}\t{info.get('doc_count', 0)}\t{sample}\n"
+                f"{actor_id}\t{';'.join(crawls_list)}\t{';'.join(domains_list)}\t{info.get('doc_count', 0)}\t{sample}\n"
             )
 
     total_docs = sum(totals.values())

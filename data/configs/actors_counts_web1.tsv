@@ -1,21 +1,4 @@
-key	total_docs	variants_json
-crawl_fdesouche_20251003_231247	184413	{"crawl-fdesouche-20251003_231247": 184413}
-crawl_er_20251003_231234	75902	{"crawl-er-20251003_231234": 75902}
-crawl_lo_full_20250928_001323	62772	{"crawl-lo-full-20250928_001323": 62772}
-crawl_revperm_20250928_003219	57101	{"crawl-revperm-20250928_003219": 57101}
-crawl_initiative_communiste_20250928_003234	36767	{"crawl-initiative-communiste-20250928_003234": 36767}
-crawl_contretemps_20250928_003525	19140	{"crawl-contretemps-20250928_003525": 19140}
-crawl_polemia_20250928_003004	14037	{"crawl-polemia-20250928_003004": 14037}
-crawl_ucl_20250928_003510	11792	{"crawl-ucl-20250928_003510": 11792}
-crawl_lundi_am_20250928_003202	11708	{"crawl-lundi-am-20250928_003202": 11708}
-crawl_jean_jaures_20250928_003513	11359	{"crawl-jean-jaures-20250928_003513": 11359}
-crawl_actionfrancaise_20251003_000000	10627	{"crawl-actionfrancaise-20251003_000000": 10627}
-crawl_lfi_full_20250928_000133	8836	{"crawl-lfi-full-20250928_000133": 8836}
-crawl_npa_full_20250928_001251	8314	{"crawl-npa-full-20250928_001251": 8314}
-crawl_terranova_20250928_003520	3758	{"crawl-terranova-20250928_003520": 3758}
-crawl_lr_full_20250928_001404	961	{"crawl-lr-full-20250928_001404": 961}
-crawl_ps_full_20250928_000302	803	{"crawl-ps-full-20250928_000302": 803}
-crawl_hut_fr_20251003_231255	753	{"crawl-hut-fr-20251003_231255": 753}
-crawl_eco_full_20250928_000354	674	{"crawl-eco-full-20250928_000354": 674}
-crawl_rn_full_20250927_234616	455	{"crawl-rn-full-20250927_234616": 455}
-crawl_cce_full_20250927_234505	161	{"crawl-cce-full-20250927_234505": 161}
+actor_id	crawl_ids	domain_ids	doc_count	variant_examples
+actionfrancaise_net	crawl_actionfrancaise_20251003_000000	actionfrancaise_net	2	actionfrancaise.net×2
+politiquemagazine_fr	crawl_actionfrancaise_20251003_000000	politiquemagazine_fr	2	politiquemagazine.fr×2
+bernardlugan_blogspot_com	crawl_actionfrancaise_20251003_000000	bernardlugan_blogspot_com	1	bernardlugan.blogspot.com×1

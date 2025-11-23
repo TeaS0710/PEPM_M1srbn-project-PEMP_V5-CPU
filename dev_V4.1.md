@@ -34,3 +34,8 @@ Ce document esquisse les évolutions prioritaires ou exploratoires au-delà de l
 - **Import V1/V2** : scripts pour convertir les sorties historiques (TSV, JSON) vers la structure V4 sans repasser par le prepare complet, avec validation automatique des champs attendus.
 - **Migration V4 → V4.1** : guide de checklist (hardware, modèles, label maps) pour garder la reproductibilité lors de l'upgrade et inclure des tests smoke Make.
 
+## 6. Notes de maintenance (mini-corpus acteurs)
+- Nettoyage du pipeline idéo : suppression du mode legacy dans `core_prepare` et prise en charge unique du YAML `ideology_actors.yml` (résolution par domaine puis crawl).
+- Génération du squelette acteurs enrichi (domaines) via `make ideology_skeleton` + labellisation minimale pour `web1` afin d'avoir deux classes actives.
+- Smoke-test reproductible : `scripts/tests/test_midlevel_demo.py` exécute `prepare → train → evaluate` sur le mini corpus TEI web1 (sklearn) et vérifie la présence des artefacts.
+
