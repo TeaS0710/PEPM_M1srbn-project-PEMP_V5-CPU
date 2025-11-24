@@ -1,0 +1,41 @@
+[run_single] exp_id=ideo_balancing_sweep run_id=ideo_balancing_sweep_run_000007
+[run_single] CMD: make run STAGE=pipeline PROFILE=ideo_quick BALANCE_STRATEGY=oversample BALANCE_PRESET=parity FAMILY=spacy SEED=49 OVERRIDES=view=ideology_global max_docs_global=1500 dataset_id=web1_asr1 data.corpus_ids=["web1", "asr1"] data.merge_mode=juxtaposed data.source_field=corpus_id analysis.compare_by=["corpus_id"] families=["spacy"] models_spacy=["spacy_cnn_quick"]
+make[1]: Entering directory '/home/teas/prog/PEPM_M1srbn-project-PEMP_V5.5-CPU-main'
+[run] STAGE=pipeline PROFILE=ideo_quick FAMILY=spacy
+make[2]: Entering directory '/home/teas/prog/PEPM_M1srbn-project-PEMP_V5.5-CPU-main'
+.venv/bin/python scripts/pre/pre_check_env.py --profile ideo_quick || true
+[env] Profil cible (info): ideo_quick
+[env] Vérification des imports critiques...
+  [OK] import yaml
+  [OK] import sklearn
+  [OK] import spacy
+  [OK] import transformers
+[env] Compilation py_compile de scripts/ ...
+  [OK] Tous les scripts compilent.
+[env] Diagnostic OK.
+[check_scripts] Compilation de tous les scripts Python (py_compile)...
+[check_scripts] OK : syntaxe Python valide pour tous les scripts.
+[check] Vérification du profil ideo_quick...
+.venv/bin/python scripts/pre/pre_check_config.py \
+--profile ideo_quick \
+--override corpus_id=web1 --override balance_strategy=oversample --override balance_preset=parity --override seed=49 --override view=ideology_global --override max_docs_global=1500 --override dataset_id=web1_asr1 --override data.corpus_ids=[web1, --override asr1] --override data.merge_mode=juxtaposed --override data.source_field=corpus_id --override analysis.compare_by=[corpus_id] --override families=[spacy] --override models_spacy=[spacy_cnn_quick] \
+--verbose
+Traceback (most recent call last):
+  File "/home/teas/prog/PEPM_M1srbn-project-PEMP_V5.5-CPU-main/scripts/pre/pre_check_config.py", line 176, in <module>
+    main()
+  File "/home/teas/prog/PEPM_M1srbn-project-PEMP_V5.5-CPU-main/scripts/pre/pre_check_config.py", line 160, in main
+    params = resolve_profile_base(args.profile, args.override)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/teas/prog/PEPM_M1srbn-project-PEMP_V5.5-CPU-main/scripts/core/core_utils.py", line 190, in resolve_profile_base
+    params = apply_overrides(params, overrides)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/teas/prog/PEPM_M1srbn-project-PEMP_V5.5-CPU-main/scripts/core/core_utils.py", line 61, in apply_overrides
+    path, value = parse_override(raw)
+                  ^^^^^^^^^^^^^^^^^^^
+  File "/home/teas/prog/PEPM_M1srbn-project-PEMP_V5.5-CPU-main/scripts/core/core_utils.py", line 51, in parse_override
+    raise ValueError(f"Override invalide (pas de '='): {raw}")
+ValueError: Override invalide (pas de '='): asr1]
+make[2]: *** [makefile:159: check] Error 1
+make[2]: Leaving directory '/home/teas/prog/PEPM_M1srbn-project-PEMP_V5.5-CPU-main'
+make[1]: *** [makefile:211: run] Error 2
+make[1]: Leaving directory '/home/teas/prog/PEPM_M1srbn-project-PEMP_V5.5-CPU-main'
