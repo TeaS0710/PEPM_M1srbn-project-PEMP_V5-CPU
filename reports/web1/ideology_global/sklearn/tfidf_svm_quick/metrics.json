@@ -1,0 +1,35 @@
+{
+  "accuracy": 0.9422222222222222,
+  "macro_f1": 0.8328666933318096,
+  "classification_report": {
+    "left": {
+      "precision": 0.9609756097560975,
+      "recall": 0.9752475247524752,
+      "f1-score": 0.9680589680589681,
+      "support": 404.0
+    },
+    "right": {
+      "precision": 0.75,
+      "recall": 0.6521739130434783,
+      "f1-score": 0.6976744186046512,
+      "support": 46.0
+    },
+    "accuracy": 0.9422222222222222,
+    "macro avg": {
+      "precision": 0.8554878048780488,
+      "recall": 0.8137107188979767,
+      "f1-score": 0.8328666933318096,
+      "support": 450.0
+    },
+    "weighted avg": {
+      "precision": 0.939409214092141,
+      "recall": 0.9422222222222222,
+      "f1-score": 0.9404196585591934,
+      "support": 450.0
+    }
+  },
+  "family": "sklearn",
+  "model_id": "tfidf_svm_quick",
+  "n_eval_docs": 450,
+  "n_features": 7439
+}

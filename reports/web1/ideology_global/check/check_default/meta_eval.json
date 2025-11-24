@@ -1,0 +1,11 @@
+{
+  "profile": "ideo_quick",
+  "dataset_id": "web1",
+  "eval_dataset_id": "web1",
+  "corpus_id": "web1",
+  "view": "ideology_global",
+  "family": "check",
+  "model_id": "check_default",
+  "n_eval_docs": 450,
+  "pipeline_version": "4.0.0-dev"
+}
